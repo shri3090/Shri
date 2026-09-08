@@ -1,0 +1,6 @@
+{
+  "name": "GenericMed",
+  "description": "Medicine price-comparison and licensed-pharmacy purchasing platform delivering affordable generic medicines with verified total-cost comparison and prescription workflows.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
