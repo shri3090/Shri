@@ -1,6 +1,21 @@
-import React from 'react';
-import { Pill, ShoppingBag, MapPin, ShieldCheck, Stethoscope, Store, SlidersHorizontal, HelpCircle } from 'lucide-react';
-import { UserRole } from '../types';
+import React, { useState } from 'react';
+import {
+  Pill,
+  ShoppingBag,
+  MapPin,
+  ShieldCheck,
+  Stethoscope,
+  Store,
+  SlidersHorizontal,
+  HelpCircle,
+  User,
+  LogOut,
+  ChevronDown,
+  LogIn,
+  UserPlus,
+  Lock,
+} from 'lucide-react';
+import { UserRole, UserProfile } from '../types';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -14,6 +29,10 @@ interface HeaderProps {
   pendingRxCount: number;
   onOpenSupport: () => void;
   onOpenPrdSpecs: () => void;
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  onOpenAuth: (mode?: 'login' | 'register') => void;
+  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,7 +47,12 @@ export const Header: React.FC<HeaderProps> = ({
   pendingRxCount,
   onOpenSupport,
   onOpenPrdSpecs,
+  user,
+  isAuthenticated,
+  onOpenAuth,
+  onLogout,
 }) => {
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-neutral-200">
       {/* Top Banner: PRD Persona & Role Switcher */}
@@ -98,6 +122,19 @@ export const Header: React.FC<HeaderProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Ops & Audit</span>
             </button>
+
+            <button
+              id="role-btn-auth"
+              onClick={() => onSelectRole('auth')}
+              className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-colors border ${
+                currentRole === 'auth'
+                  ? 'bg-amber-600 border-amber-500 text-white shadow-xs font-bold'
+                  : 'border-amber-500/40 text-amber-300 hover:text-white hover:bg-neutral-800'
+              }`}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Login & Register</span>
+            </button>
           </div>
         </div>
       </div>
@@ -156,6 +193,106 @@ export const Header: React.FC<HeaderProps> = ({
               <HelpCircle className="w-3.5 h-3.5 text-neutral-500" />
               <span className="hidden sm:inline">Helpline</span>
             </button>
+
+            {/* User Account / Auth Profile Button */}
+            {isAuthenticated && user ? (
+              <div className="relative">
+                <button
+                  id="btn-user-profile-menu"
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 bg-neutral-50 hover:bg-neutral-100 text-xs text-neutral-800 transition-colors"
+                >
+                  <div className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px]">
+                    {user.name.charAt(0)}
+                  </div>
+                  <span className="font-semibold max-w-[110px] truncate hidden sm:inline">{user.name}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
+                </button>
+
+                {showUserDropdown && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50 animate-fadeIn">
+                    <div className="px-3.5 py-2 border-b border-neutral-100">
+                      <p className="font-bold text-xs text-neutral-900 truncate">{user.name}</p>
+                      <p className="text-[11px] text-neutral-500 truncate">{user.email || user.phone}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {user.role ? user.role.toUpperCase() : 'PATIENT'}
+                        </span>
+                        {user.councilRegNo && (
+                          <span className="text-[9px] font-mono text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200">
+                            {user.councilRegNo}
+                          </span>
+                        )}
+                        {user.licenseNumber && (
+                          <span className="text-[9px] font-mono text-purple-700 bg-purple-50 px-1 py-0.2 rounded border border-purple-200">
+                            {user.licenseNumber}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="py-1 text-xs">
+                      <button
+                        id="menu-switch-account"
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onOpenAuth('login');
+                        }}
+                        className="w-full text-left px-3.5 py-2 text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                      >
+                        <User className="w-3.5 h-3.5 text-neutral-400" />
+                        <span>Switch Account / Persona</span>
+                      </button>
+
+                      <button
+                        id="menu-register-new"
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onOpenAuth('register');
+                        }}
+                        className="w-full text-left px-3.5 py-2 text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 text-neutral-400" />
+                        <span>Register Chemist / Pharmacist</span>
+                      </button>
+                    </div>
+
+                    <div className="pt-1 border-t border-neutral-100">
+                      <button
+                        id="menu-btn-logout"
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          onLogout();
+                        }}
+                        className="w-full text-left px-3.5 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-medium"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Log Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  id="btn-header-login"
+                  onClick={() => onOpenAuth('login')}
+                  className="px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 text-xs font-semibold text-neutral-800 hover:bg-neutral-50 flex items-center gap-1.5 transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Sign In</span>
+                </button>
+                <button
+                  id="btn-header-register"
+                  onClick={() => onOpenAuth('register')}
+                  className="hidden sm:flex px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-medium items-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Register</span>
+                </button>
+              </div>
+            )}
 
             <button
               id="btn-header-cart"
@@ -222,6 +359,18 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <span>💰 Savings Tracker & Refills</span>
+            </button>
+
+            <button
+              id="nav-tab-account"
+              onClick={() => onSelectCustomerTab('account')}
+              className={`px-3 py-1.5 rounded-md font-medium whitespace-nowrap flex items-center gap-1 transition-colors ${
+                activeCustomerTab === 'account'
+                  ? 'bg-neutral-900 text-white'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+              }`}
+            >
+              <span>🔐 Login & Register Screen</span>
             </button>
           </nav>
         )}

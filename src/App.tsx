@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   UserRole,
+  UserProfile,
   Medicine,
   Offer,
   CartItem,
@@ -33,6 +34,7 @@ import { PartnerPharmacyView } from './components/PartnerPharmacyView';
 import { AdminAuditView } from './components/AdminAuditView';
 import { PrdComplianceModal } from './components/PrdComplianceModal';
 import { SupportModal } from './components/SupportModal';
+import { AuthScreen } from './components/AuthScreen';
 
 import {
   Search,
@@ -51,12 +53,36 @@ import {
 
 export default function App() {
   // Navigation & Role State
-  const [currentRole, setCurrentRole] = useState<UserRole>('customer');
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const savedRole = localStorage.getItem('genericmed_auth_role');
+    return (savedRole as UserRole) || 'customer';
+  });
   const [activeCustomerTab, setActiveCustomerTab] = useState<string>('discover');
 
+  // User Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const saved = localStorage.getItem('genericmed_is_authenticated');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const [user, setUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('genericmed_auth_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_USER;
+  });
+
+  // Auth Modal State
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+
   // Domain Entities
-  const [user, setUser] = useState(INITIAL_USER);
-  const [selectedPincode, setSelectedPincode] = useState('400018');
+  const [selectedPincode, setSelectedPincode] = useState(() => user?.defaultPincode || '400018');
   const [medicines] = useState<Medicine[]>(MEDICINES);
   const [offers, setOffers] = useState<Offer[]>(INITIAL_OFFERS);
   const [partners] = useState<PharmacyPartner[]>(PHARMACY_PARTNERS);
@@ -90,6 +116,50 @@ export default function App() {
   const showToast = (msg: string) => {
     setNotificationToast(msg);
     setTimeout(() => setNotificationToast(null), 3500);
+  };
+
+  // Auth action handlers
+  const handleAuthSuccess = (authenticatedUser: UserProfile, role: UserRole) => {
+    setUser(authenticatedUser);
+    setCurrentRole(role);
+    setIsAuthenticated(true);
+    setShowAuthModal(false);
+    if (authenticatedUser.defaultPincode) {
+      setSelectedPincode(authenticatedUser.defaultPincode);
+    }
+    logAuditEvent(
+      'USER_AUTHENTICATED',
+      'User',
+      authenticatedUser.id,
+      `User ${authenticatedUser.name} signed in successfully with role ${role.toUpperCase()}.`,
+      authenticatedUser.name,
+      role
+    );
+    showToast(`Welcome back, ${authenticatedUser.name}! Signed in as ${role === 'customer' ? 'Patient' : role === 'pharmacist' ? 'Registered Pharmacist' : role === 'partner' ? 'Chemist Partner' : 'Audit Officer'}.`);
+    if (activeCustomerTab === 'account') {
+      setActiveCustomerTab('discover');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('genericmed_auth_user');
+    localStorage.removeItem('genericmed_auth_role');
+    localStorage.setItem('genericmed_is_authenticated', 'false');
+    setIsAuthenticated(false);
+    logAuditEvent(
+      'USER_LOGGED_OUT',
+      'User',
+      user?.id || 'guest',
+      `User signed out of session.`,
+      user?.name || 'User',
+      currentRole
+    );
+    showToast('You have been signed out.');
+  };
+
+  const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
+    setAuthModalMode(mode);
+    setShowAuthModal(true);
   };
 
   // Add an audit log entry (FR-ADM-04)
@@ -505,6 +575,10 @@ export default function App() {
         pendingRxCount={prescriptions.filter((p) => p.status === 'Pending Review').length}
         onOpenSupport={() => setShowSupportModal(true)}
         onOpenPrdSpecs={() => setShowPrdModal(true)}
+        user={user}
+        isAuthenticated={isAuthenticated}
+        onOpenAuth={handleOpenAuth}
+        onLogout={handleLogout}
       />
 
       {/* Role-Based Body Content */}
@@ -770,6 +844,16 @@ export default function App() {
                 onAddManualReminder={() => setShowCartModal(true)}
               />
             )}
+
+            {/* Customer Sub-tab 5: Login & Register Screen */}
+            {activeCustomerTab === 'account' && (
+              <AuthScreen
+                isModal={false}
+                defaultTab="login"
+                defaultRole={currentRole}
+                onAuthSuccess={handleAuthSuccess}
+              />
+            )}
           </div>
         )}
 
@@ -801,6 +885,33 @@ export default function App() {
         {/* ======================= ROLE 4: ADMIN & AUDIT COCKPIT ======================= */}
         {currentRole === 'admin' && (
           <AdminAuditView auditLogs={auditLogs} />
+        )}
+
+        {/* ======================= ROLE 5: DEDICATED LOGIN & REGISTRATION SCREEN ======================= */}
+        {currentRole === 'auth' && (
+          <div className="space-y-6 py-4">
+            <div className="text-center max-w-lg mx-auto space-y-1.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                CDSCO & Jan Aushadhi Verified Gateway
+              </span>
+              <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">
+                Authentication & Portal Access
+              </h1>
+              <p className="text-xs text-neutral-500">
+                Sign in to manage prescriptions and track savings, or register as an authorized retail chemist or verification pharmacist.
+              </p>
+            </div>
+
+            <AuthScreen
+              isModal={false}
+              defaultTab={authModalMode}
+              defaultRole="customer"
+              onAuthSuccess={(u, r) => {
+                handleAuthSuccess(u, r);
+              }}
+            />
+          </div>
         )}
       </main>
 
@@ -917,6 +1028,18 @@ export default function App() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 7. Dedicated Authentication Modal (Login & Register) */}
+      {showAuthModal && (
+        <AuthScreen
+          isOpen={true}
+          isModal={true}
+          defaultTab={authModalMode}
+          defaultRole={currentRole}
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
       )}
     </div>
   );

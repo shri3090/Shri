@@ -3,7 +3,7 @@
  * Aligned with GenericMed PRD Section 14 (High-Level Data Model) & Section 15 (Roles & Permissions)
  */
 
-export type UserRole = 'customer' | 'pharmacist' | 'partner' | 'admin';
+export type UserRole = 'customer' | 'pharmacist' | 'partner' | 'admin' | 'auth';
 
 export interface UserProfile {
   id: string;
@@ -12,6 +12,12 @@ export interface UserProfile {
   email: string;
   defaultPincode: string;
   addresses: Address[];
+  role?: UserRole;
+  licenseNumber?: string;
+  councilRegNo?: string;
+  pharmacyName?: string;
+  gstin?: string;
+  qualification?: string;
 }
 
 export interface Address {
