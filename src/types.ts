@@ -189,3 +189,102 @@ export interface SupportTicket {
     timestamp: string;
   }[];
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 3: Chemist POS / ERP Sync & IoT Cold-Chain Telemetry Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ErpSystemName = 'Marg ERP' | 'Mediman' | 'POSibolt' | 'Vyapar' | 'Manual';
+
+export interface ErpSystem {
+  id: string;
+  name: ErpSystemName;
+  version: string;
+  logoInitials: string;   // e.g. "ME", "MM", "PB"
+  color: string;          // Tailwind bg class token e.g. "bg-blue-600"
+  description: string;
+  webhookEndpoint: string;
+}
+
+export type ErpSyncState = 'connected' | 'syncing' | 'error' | 'disconnected' | 'pending';
+
+export interface ErpSyncStatus {
+  id: string;
+  partnerId: string;
+  erpSystemId: string;
+  erpSystemName: ErpSystemName;
+  state: ErpSyncState;
+  lastSyncAt: string;           // ISO timestamp
+  nextSyncAt?: string;
+  itemsSyncedTotal: number;
+  itemsPendingSync: number;
+  lastErrorMessage?: string;
+  webhookUrl: string;
+  apiKeyMasked: string;         // e.g. "••••••••ab12"
+  autoSyncEnabled: boolean;
+  syncIntervalMinutes: number;
+}
+
+export interface ErpWebhookPayload {
+  eventType: 'STOCK_UPDATE' | 'PRICE_UPDATE' | 'NEW_SALE' | 'BATCH_EXPIRY_ALERT' | 'REORDER_TRIGGER';
+  partnerId: string;
+  erpSystem: ErpSystemName;
+  timestamp: string;
+  items: {
+    medicineId: string;
+    medicineName: string;
+    batchNumber: string;
+    expiryDate: string;
+    stockCount: number;
+    basePrice?: number;
+    mrp?: number;
+  }[];
+  rawPayload?: string;
+}
+
+// ─── Cold-Chain Telemetry ────────────────────────────────────────────────────
+
+export type ColdChainSensorStatus = 'Active' | 'Inactive' | 'Breach' | 'Warning' | 'Offline';
+
+export interface ColdChainSensor {
+  id: string;
+  label: string;               // e.g. "Sensor #C-MUM-04 (Insulin Bay — Worli)"
+  partnerId: string;
+  partnerName: string;
+  location: string;            // e.g. "Cold Storage Bay A, Worli Kendra"
+  type: 'BLE' | 'Cellular' | 'WiFi';
+  status: ColdChainSensorStatus;
+  currentTempC: number;        // live reading in °C
+  minThresholdC: number;       // regulatory minimum, e.g. 2
+  maxThresholdC: number;       // regulatory maximum, e.g. 8
+  batteryPercent: number;
+  lastPingAt: string;          // ISO timestamp
+  orderId?: string;            // if attached to a specific shipment
+  medicineCategory: 'Insulin & Biologics' | 'Vaccines' | 'Eye Drops' | 'General Refrigerated';
+}
+
+export interface ColdChainReading {
+  id: string;
+  sensorId: string;
+  orderId?: string;
+  tempC: number;
+  humidityPercent?: number;
+  recordedAt: string;         // ISO timestamp
+  isBreachEvent: boolean;
+}
+
+export type ColdChainAlertSeverity = 'Critical' | 'Warning' | 'Info';
+
+export interface ColdChainAlert {
+  id: string;
+  sensorId: string;
+  sensorLabel: string;
+  orderId?: string;
+  severity: ColdChainAlertSeverity;
+  message: string;
+  tempC: number;
+  thresholdC: number;
+  triggeredAt: string;        // ISO timestamp
+  resolvedAt?: string;
+  acknowledgedBy?: string;
+}

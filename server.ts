@@ -18,8 +18,30 @@ import {
   getAuditEventsRepository,
   createAuditEventRepository,
 } from './server/db';
+import {
+  ERP_SYSTEMS,
+  INITIAL_ERP_SYNC_STATUSES,
+  RECENT_ERP_WEBHOOKS,
+  COLD_CHAIN_SENSORS,
+  COLD_CHAIN_READINGS,
+  INITIAL_COLD_CHAIN_ALERTS,
+} from './src/data/mockData';
+import type {
+  ErpSyncStatus,
+  ErpWebhookPayload,
+  ColdChainSensor,
+  ColdChainReading,
+  ColdChainAlert,
+} from './src/types';
 
 dotenv.config();
+
+// ── Phase 3 in-memory state (seeds from mockData; survives across requests) ──
+const erpSyncStatuses: ErpSyncStatus[] = JSON.parse(JSON.stringify(INITIAL_ERP_SYNC_STATUSES));
+const erpWebhookLog: ErpWebhookPayload[] = JSON.parse(JSON.stringify(RECENT_ERP_WEBHOOKS));
+const coldChainSensors: ColdChainSensor[] = JSON.parse(JSON.stringify(COLD_CHAIN_SENSORS));
+const coldChainReadings: ColdChainReading[] = JSON.parse(JSON.stringify(COLD_CHAIN_READINGS));
+const coldChainAlerts: ColdChainAlert[] = JSON.parse(JSON.stringify(INITIAL_COLD_CHAIN_ALERTS));
 
 const rootDir = process.cwd();
 
@@ -211,6 +233,179 @@ async function startServer() {
     } catch (err: any) {
       res.status(500).json({ error: err?.message });
     }
+  });
+
+  // ── Phase 3: ERP / POS Webhook Sync ─────────────────────────────────────────
+
+  // ── Phase 3: ERP / POS Webhook Sync ─────────────────────────────────────────
+
+  // GET /api/erp/systems — list of supported ERP systems
+  app.get('/api/erp/systems', (_req, res) => {
+    res.json({ systems: ERP_SYSTEMS });
+  });
+
+  // GET /api/erp/sync-status/:partnerId — sync status for a specific partner
+  app.get('/api/erp/sync-status/:partnerId', (req, res) => {
+    const { partnerId } = req.params;
+    const statuses = erpSyncStatuses.filter(s => s.partnerId === partnerId);
+    res.json({ statuses, webhookLog: erpWebhookLog.filter(w => w.partnerId === partnerId) });
+  });
+
+  // GET /api/erp/sync-status — all sync statuses
+  app.get('/api/erp/sync-status', (_req, res) => {
+    res.json({ statuses: erpSyncStatuses, recentWebhooks: erpWebhookLog.slice(0, 20) });
+  });
+
+  // POST /api/erp/webhook — inbound webhook from ERP/POS system
+  app.post('/api/erp/webhook', (req, res) => {
+    try {
+      const payload = req.body as ErpWebhookPayload;
+      if (!payload?.partnerId || !payload?.erpSystem || !payload?.eventType) {
+        res.status(400).json({ error: 'partnerId, erpSystem, and eventType are required' });
+        return;
+      }
+
+      // Log the inbound webhook
+      const inbound: ErpWebhookPayload = {
+        ...payload,
+        timestamp: new Date().toISOString(),
+      };
+      erpWebhookLog.unshift(inbound);
+      if (erpWebhookLog.length > 100) erpWebhookLog.pop();
+
+      // Update sync status for the partner
+      const idx = erpSyncStatuses.findIndex(s => s.partnerId === payload.partnerId);
+      if (idx >= 0) {
+        erpSyncStatuses[idx] = {
+          ...erpSyncStatuses[idx],
+          state: 'connected',
+          lastSyncAt: new Date().toISOString(),
+          nextSyncAt: new Date(Date.now() + erpSyncStatuses[idx].syncIntervalMinutes * 60 * 1000).toISOString(),
+          itemsSyncedTotal: erpSyncStatuses[idx].itemsSyncedTotal + payload.items.length,
+          itemsPendingSync: Math.max(0, erpSyncStatuses[idx].itemsPendingSync - payload.items.length),
+          lastErrorMessage: undefined,
+        };
+      }
+
+      res.status(200).json({ received: true, itemsProcessed: payload.items.length, timestamp: inbound.timestamp });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // PATCH /api/erp/sync-status/:id/toggle-auto — toggle autoSync flag
+  app.patch('/api/erp/sync-status/:id/toggle-auto', (req, res) => {
+    const idx = erpSyncStatuses.findIndex(s => s.id === req.params.id);
+    if (idx < 0) { res.status(404).json({ error: 'Sync status not found' }); return; }
+    erpSyncStatuses[idx] = { ...erpSyncStatuses[idx], autoSyncEnabled: !erpSyncStatuses[idx].autoSyncEnabled };
+    res.json({ status: erpSyncStatuses[idx] });
+  });
+
+  // ── Phase 3: IoT Cold-Chain Telemetry ────────────────────────────────────────
+
+  // GET /api/cold-chain/sensors — all sensors, optionally filtered by ?partnerId=
+  app.get('/api/cold-chain/sensors', (req, res) => {
+    const { partnerId } = req.query as Record<string, string>;
+    const sensors = partnerId
+      ? coldChainSensors.filter(s => s.partnerId === partnerId)
+      : coldChainSensors;
+    res.json({ sensors });
+  });
+
+  // GET /api/cold-chain/readings/:sensorId — 48h readings for a sensor
+  app.get('/api/cold-chain/readings/:sensorId', (req, res) => {
+    const readings = coldChainReadings
+      .filter(r => r.sensorId === req.params.sensorId)
+      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+    res.json({ readings });
+  });
+
+  // GET /api/cold-chain/readings-by-order/:orderId — readings for a shipment order
+  app.get('/api/cold-chain/readings-by-order/:orderId', (req, res) => {
+    const readings = coldChainReadings
+      .filter(r => r.orderId === req.params.orderId)
+      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+    const sensor = coldChainSensors.find(s => s.orderId === req.params.orderId) || null;
+    res.json({ readings, sensor });
+  });
+
+  // GET /api/cold-chain/alerts — all alerts, ?resolved=true/false filter
+  app.get('/api/cold-chain/alerts', (req, res) => {
+    const { resolved } = req.query as Record<string, string>;
+    let alerts = coldChainAlerts;
+    if (resolved === 'false') alerts = alerts.filter(a => !a.resolvedAt);
+    if (resolved === 'true')  alerts = alerts.filter(a => !!a.resolvedAt);
+    res.json({ alerts: alerts.sort((a, b) => new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime()) });
+  });
+
+  // POST /api/cold-chain/alert — inbound IoT breach alert
+  app.post('/api/cold-chain/alert', (req, res) => {
+    try {
+      const { sensorId, tempC, message, severity } = req.body;
+      if (!sensorId || tempC === undefined) {
+        res.status(400).json({ error: 'sensorId and tempC are required' });
+        return;
+      }
+      const sensor = coldChainSensors.find(s => s.id === sensorId);
+      if (!sensor) { res.status(404).json({ error: 'Sensor not found' }); return; }
+
+      // Update sensor live reading
+      const sIdx = coldChainSensors.findIndex(s => s.id === sensorId);
+      coldChainSensors[sIdx] = {
+        ...coldChainSensors[sIdx],
+        currentTempC: tempC,
+        status: tempC > coldChainSensors[sIdx].maxThresholdC || tempC < coldChainSensors[sIdx].minThresholdC
+          ? 'Breach'
+          : tempC >= coldChainSensors[sIdx].maxThresholdC - 0.5 ? 'Warning' : 'Active',
+        lastPingAt: new Date().toISOString(),
+      };
+
+      // Append new reading
+      const reading: ColdChainReading = {
+        id: `rdg-live-${Date.now()}`,
+        sensorId,
+        orderId: sensor.orderId,
+        tempC,
+        recordedAt: new Date().toISOString(),
+        isBreachEvent: tempC > sensor.maxThresholdC || tempC < sensor.minThresholdC,
+      };
+      coldChainReadings.push(reading);
+
+      // Create alert if breach
+      if (reading.isBreachEvent) {
+        const alert: ColdChainAlert = {
+          id: `alert-live-${Date.now()}`,
+          sensorId,
+          sensorLabel: sensor.label,
+          orderId: sensor.orderId,
+          severity: severity || 'Critical',
+          message: message || `Temperature ${tempC}°C outside safe range (${sensor.minThresholdC}–${sensor.maxThresholdC}°C).`,
+          tempC,
+          thresholdC: tempC > sensor.maxThresholdC ? sensor.maxThresholdC : sensor.minThresholdC,
+          triggeredAt: new Date().toISOString(),
+        };
+        coldChainAlerts.unshift(alert);
+        res.status(201).json({ alert, reading });
+        return;
+      }
+
+      res.status(200).json({ reading });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // PATCH /api/cold-chain/alerts/:id/acknowledge — acknowledge an alert
+  app.patch('/api/cold-chain/alerts/:id/acknowledge', (req, res) => {
+    const { acknowledgedBy } = req.body;
+    const idx = coldChainAlerts.findIndex(a => a.id === req.params.id);
+    if (idx < 0) { res.status(404).json({ error: 'Alert not found' }); return; }
+    coldChainAlerts[idx] = {
+      ...coldChainAlerts[idx],
+      resolvedAt: new Date().toISOString(),
+      acknowledgedBy: acknowledgedBy || 'Duty Pharmacist',
+    };
+    res.json({ alert: coldChainAlerts[idx] });
   });
 
   // Maps Grounding endpoint for regional delivery logistics intelligence

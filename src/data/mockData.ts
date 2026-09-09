@@ -1659,3 +1659,346 @@ export const INITIAL_AUDIT_LOGS: AuditEvent[] = [
     details: '5 partner price feeds ingested. 100% within 1-hour freshness SLA.',
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 3: ERP / POS Sync & IoT Cold-Chain Telemetry Seed Data
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  ErpSystem,
+  ErpSyncStatus,
+  ErpWebhookPayload,
+  ColdChainSensor,
+  ColdChainReading,
+  ColdChainAlert,
+} from '../types';
+
+// ── ERP System Catalogue ─────────────────────────────────────────────────────
+
+export const ERP_SYSTEMS: ErpSystem[] = [
+  {
+    id: 'erp-marg',
+    name: 'Marg ERP',
+    version: '9.9 (Build 1041)',
+    logoInitials: 'ME',
+    color: 'bg-blue-600',
+    description: 'India\'s largest pharmacy ERP with 8L+ installations. Bidirectional stock, batch, and billing sync via Marg Webhook API v2.',
+    webhookEndpoint: '/api/erp/webhook',
+  },
+  {
+    id: 'erp-mediman',
+    name: 'Mediman',
+    version: '4.2.1',
+    logoInitials: 'MM',
+    color: 'bg-violet-600',
+    description: 'Hospital and retail pharmacy management suite with real-time inventory feeds and expiry tracking integration.',
+    webhookEndpoint: '/api/erp/webhook',
+  },
+  {
+    id: 'erp-posibolt',
+    name: 'POSibolt',
+    version: '3.1.0',
+    logoInitials: 'PB',
+    color: 'bg-orange-500',
+    description: 'Cloud-native POS system for Jan Aushadhi Kendras with offline sync, UPI collection, and GST invoice generation.',
+    webhookEndpoint: '/api/erp/webhook',
+  },
+  {
+    id: 'erp-vyapar',
+    name: 'Vyapar',
+    version: '17.4.2',
+    logoInitials: 'VY',
+    color: 'bg-emerald-600',
+    description: 'SMB-focused billing and inventory app widely adopted in tier-2 and tier-3 pharmacy outlets across India.',
+    webhookEndpoint: '/api/erp/webhook',
+  },
+];
+
+// ── ERP Sync Statuses (per partner) ──────────────────────────────────────────
+
+export const INITIAL_ERP_SYNC_STATUSES: ErpSyncStatus[] = [
+  {
+    id: 'sync-001',
+    partnerId: 'ph-jan-aushadhi',
+    erpSystemId: 'erp-marg',
+    erpSystemName: 'Marg ERP',
+    state: 'connected',
+    lastSyncAt: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    nextSyncAt: new Date(Date.now() + 11 * 60 * 1000).toISOString(),
+    itemsSyncedTotal: 1842,
+    itemsPendingSync: 3,
+    webhookUrl: 'https://genericmed.app/api/erp/webhook',
+    apiKeyMasked: '••••••••3a9f',
+    autoSyncEnabled: true,
+    syncIntervalMinutes: 15,
+  },
+  {
+    id: 'sync-002',
+    partnerId: 'ph-medplus',
+    erpSystemId: 'erp-mediman',
+    erpSystemName: 'Mediman',
+    state: 'syncing',
+    lastSyncAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    itemsSyncedTotal: 974,
+    itemsPendingSync: 21,
+    webhookUrl: 'https://genericmed.app/api/erp/webhook',
+    apiKeyMasked: '••••••••c7d2',
+    autoSyncEnabled: true,
+    syncIntervalMinutes: 10,
+  },
+  {
+    id: 'sync-003',
+    partnerId: 'ph-apollo',
+    erpSystemId: 'erp-posibolt',
+    erpSystemName: 'POSibolt',
+    state: 'error',
+    lastSyncAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    itemsSyncedTotal: 3201,
+    itemsPendingSync: 148,
+    lastErrorMessage: 'TLS handshake timeout — POSibolt webhook endpoint unreachable (HTTP 504). Retrying in 5 min.',
+    webhookUrl: 'https://genericmed.app/api/erp/webhook',
+    apiKeyMasked: '••••••••f01b',
+    autoSyncEnabled: true,
+    syncIntervalMinutes: 30,
+  },
+  {
+    id: 'sync-004',
+    partnerId: 'ph-wellness',
+    erpSystemId: 'erp-vyapar',
+    erpSystemName: 'Vyapar',
+    state: 'connected',
+    lastSyncAt: new Date(Date.now() - 22 * 60 * 1000).toISOString(),
+    nextSyncAt: new Date(Date.now() + 8 * 60 * 1000).toISOString(),
+    itemsSyncedTotal: 567,
+    itemsPendingSync: 0,
+    webhookUrl: 'https://genericmed.app/api/erp/webhook',
+    apiKeyMasked: '••••••••88ee',
+    autoSyncEnabled: false,
+    syncIntervalMinutes: 60,
+  },
+  {
+    id: 'sync-005',
+    partnerId: 'ph-tata1mg',
+    erpSystemId: 'erp-marg',
+    erpSystemName: 'Marg ERP',
+    state: 'disconnected',
+    lastSyncAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    itemsSyncedTotal: 0,
+    itemsPendingSync: 0,
+    webhookUrl: 'https://genericmed.app/api/erp/webhook',
+    apiKeyMasked: '••••••••----',
+    autoSyncEnabled: false,
+    syncIntervalMinutes: 15,
+  },
+];
+
+// ── Sample Webhook Payloads (recent inbound) ──────────────────────────────────
+
+export const RECENT_ERP_WEBHOOKS: ErpWebhookPayload[] = [
+  {
+    eventType: 'STOCK_UPDATE',
+    partnerId: 'ph-jan-aushadhi',
+    erpSystem: 'Marg ERP',
+    timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+    items: [
+      { medicineId: 'med-metformin-500', medicineName: 'Metformin HCl 500mg IP', batchNumber: 'BT-MF-2026-11', expiryDate: '11/2028', stockCount: 480, basePrice: 2.10 },
+      { medicineId: 'med-paracetamol-650', medicineName: 'Paracetamol 650mg IP', batchNumber: 'BT-PC-2026-08', expiryDate: '08/2028', stockCount: 1200, basePrice: 1.15 },
+      { medicineId: 'med-atorvastatin-10', medicineName: 'Atorvastatin 10mg IP', batchNumber: 'BT-AT-2026-07', expiryDate: '07/2028', stockCount: 310, basePrice: 4.80 },
+    ],
+  },
+  {
+    eventType: 'BATCH_EXPIRY_ALERT',
+    partnerId: 'ph-medplus',
+    erpSystem: 'Mediman',
+    timestamp: new Date(Date.now() - 38 * 60 * 1000).toISOString(),
+    items: [
+      { medicineId: 'med-amoxicillin-500', medicineName: 'Amoxicillin 500mg IP', batchNumber: 'BT-AM-2024-09', expiryDate: '09/2026', stockCount: 45 },
+    ],
+  },
+  {
+    eventType: 'REORDER_TRIGGER',
+    partnerId: 'ph-wellness',
+    erpSystem: 'Vyapar',
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    items: [
+      { medicineId: 'med-telmisartan-40', medicineName: 'Telmisartan 40mg IP', batchNumber: 'TBD', expiryDate: 'TBD', stockCount: 12 },
+    ],
+  },
+];
+
+// ── Cold-Chain Sensors ────────────────────────────────────────────────────────
+
+export const COLD_CHAIN_SENSORS: ColdChainSensor[] = [
+  {
+    id: 'sensor-c-mum-01',
+    label: 'Sensor #C-MUM-01 (Insulin Bay — Worli Kendra)',
+    partnerId: 'ph-jan-aushadhi',
+    partnerName: 'PM Jan Aushadhi Kendra #1042 (Worli)',
+    location: 'Cold Storage Bay A — Worli, Mumbai 400018',
+    type: 'BLE',
+    status: 'Active',
+    currentTempC: 4.2,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 87,
+    lastPingAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    medicineCategory: 'Insulin & Biologics',
+  },
+  {
+    id: 'sensor-c-mum-02',
+    label: 'Sensor #C-MUM-02 (Vaccine Refrigerator — Parel Hub)',
+    partnerId: 'ph-medplus',
+    partnerName: 'MedPlus Licensed Chemist (Worli)',
+    location: 'Vaccine Cold Room — Parel, Mumbai 400012',
+    type: 'Cellular',
+    status: 'Warning',
+    currentTempC: 7.8,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 62,
+    lastPingAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+    medicineCategory: 'Vaccines',
+  },
+  {
+    id: 'sensor-c-del-01',
+    label: 'Sensor #C-DEL-01 (Insulin Transit — AIIMS Dispatch)',
+    partnerId: 'ph-jan-aushadhi-del-aiims',
+    partnerName: 'PM Jan Aushadhi Kendra #2201 (AIIMS Ansari Nagar)',
+    location: 'Transit Bag TH-INS-0044 — AIIMS, Delhi 110029',
+    type: 'BLE',
+    status: 'Breach',
+    currentTempC: 9.4,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 45,
+    lastPingAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    orderId: 'ord-001',
+    medicineCategory: 'Insulin & Biologics',
+  },
+  {
+    id: 'sensor-c-blr-01',
+    label: 'Sensor #C-BLR-01 (Eye Drop Cold Bay — Koramangala)',
+    partnerId: 'ph-jan-aushadhi-blr-koramangala',
+    partnerName: 'PM Jan Aushadhi Kendra #3301 (Koramangala)',
+    location: 'Cold Storage Bay C — Koramangala, Bengaluru 560034',
+    type: 'WiFi',
+    status: 'Active',
+    currentTempC: 5.1,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 94,
+    lastPingAt: new Date(Date.now() - 30 * 1000).toISOString(),
+    medicineCategory: 'Eye Drops',
+  },
+  {
+    id: 'sensor-c-pun-01',
+    label: 'Sensor #C-PUN-01 (General Refrigerated — Kothrud)',
+    partnerId: 'ph-jan-aushadhi-pun-kothrud',
+    partnerName: 'PM Jan Aushadhi Kendra #4101 (Kothrud)',
+    location: 'Cold Shelf Row B — Kothrud, Pune 411038',
+    type: 'BLE',
+    status: 'Offline',
+    currentTempC: 0,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 0,
+    lastPingAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    medicineCategory: 'General Refrigerated',
+  },
+  {
+    id: 'sensor-c-hyd-01',
+    label: 'Sensor #C-HYD-01 (Insulin Bay — HITEC City)',
+    partnerId: 'ph-jan-aushadhi-hyd-hitec',
+    partnerName: 'PM Jan Aushadhi Kendra #5101 (HITEC City)',
+    location: 'Cold Storage Bay A — HITEC City, Hyderabad 500081',
+    type: 'Cellular',
+    status: 'Active',
+    currentTempC: 3.7,
+    minThresholdC: 2,
+    maxThresholdC: 8,
+    batteryPercent: 78,
+    lastPingAt: new Date(Date.now() - 90 * 1000).toISOString(),
+    medicineCategory: 'Insulin & Biologics',
+  },
+];
+
+// ── Cold-Chain Readings (48-hour history per sensor, sampled every 30 min) ───
+
+function buildReadings(sensorId: string, orderId?: string, baseTemp = 4.5, jitter = 1.2, breachAtHour?: number): ColdChainReading[] {
+  const readings: ColdChainReading[] = [];
+  const now = Date.now();
+  for (let i = 96; i >= 0; i--) {
+    const ts = new Date(now - i * 30 * 60 * 1000).toISOString();
+    const hoursAgo = i * 0.5;
+    const isBreach = breachAtHour !== undefined && hoursAgo <= breachAtHour && hoursAgo >= breachAtHour - 1;
+    const tempC = isBreach
+      ? 9.1 + Math.random() * 1.5
+      : baseTemp + (Math.random() - 0.5) * jitter;
+    readings.push({
+      id: `rdg-${sensorId}-${i}`,
+      sensorId,
+      orderId,
+      tempC: parseFloat(tempC.toFixed(1)),
+      humidityPercent: parseFloat((55 + (Math.random() - 0.5) * 10).toFixed(1)),
+      recordedAt: ts,
+      isBreachEvent: isBreach,
+    });
+  }
+  return readings;
+}
+
+export const COLD_CHAIN_READINGS: ColdChainReading[] = [
+  ...buildReadings('sensor-c-mum-01', undefined, 4.2, 0.9),
+  ...buildReadings('sensor-c-mum-02', undefined, 7.3, 0.6),
+  ...buildReadings('sensor-c-del-01', 'ord-001', 4.8, 1.0, 1.5),
+  ...buildReadings('sensor-c-blr-01', undefined, 5.0, 0.7),
+  ...buildReadings('sensor-c-hyd-01', undefined, 3.7, 0.8),
+];
+
+// ── Cold-Chain Alerts ─────────────────────────────────────────────────────────
+
+export const INITIAL_COLD_CHAIN_ALERTS: ColdChainAlert[] = [
+  {
+    id: 'alert-cc-001',
+    sensorId: 'sensor-c-del-01',
+    sensorLabel: 'Sensor #C-DEL-01 (Insulin Transit — AIIMS Dispatch)',
+    orderId: 'ord-001',
+    severity: 'Critical',
+    message: 'Temperature breach detected at 9.4°C — exceeds 8°C max threshold. Insulin shipment (Order #ORD-2026-0001) may be compromised. Immediate inspection required.',
+    tempC: 9.4,
+    thresholdC: 8,
+    triggeredAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'alert-cc-002',
+    sensorId: 'sensor-c-mum-02',
+    sensorLabel: 'Sensor #C-MUM-02 (Vaccine Refrigerator — Parel Hub)',
+    severity: 'Warning',
+    message: 'Temperature approaching upper limit at 7.8°C. Verify cold room door seal and compressor performance.',
+    tempC: 7.8,
+    thresholdC: 8,
+    triggeredAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'alert-cc-003',
+    sensorId: 'sensor-c-pun-01',
+    sensorLabel: 'Sensor #C-PUN-01 (General Refrigerated — Kothrud)',
+    severity: 'Critical',
+    message: 'Sensor offline for 6+ hours. Battery depleted. Cold-chain integrity unverified for Kothrud refrigerated stock.',
+    tempC: 0,
+    thresholdC: 8,
+    triggeredAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'alert-cc-004',
+    sensorId: 'sensor-c-mum-01',
+    sensorLabel: 'Sensor #C-MUM-01 (Insulin Bay — Worli Kendra)',
+    severity: 'Info',
+    message: 'Scheduled 48-hour cold-chain compliance report generated. All readings within 2–8°C range. Audit certificate available.',
+    tempC: 4.2,
+    thresholdC: 8,
+    triggeredAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    resolvedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    acknowledgedBy: 'Sneha Patil (Duty Pharmacist)',
+  },
+];
