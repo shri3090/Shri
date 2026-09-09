@@ -7,8 +7,12 @@ import {
   INITIAL_PRESCRIPTIONS,
   INITIAL_ORDERS,
   INITIAL_AUDIT_LOGS,
-  REFILL_REMINDERS
+  INITIAL_REFILLS,
 } from '../src/data/mockData';
+
+// Alias to match legacy references inside this file
+const INITIAL_AUDIT_EVENTS = INITIAL_AUDIT_LOGS;
+const REFILL_REMINDERS = INITIAL_REFILLS;
 import {
   Medicine as DomainMedicine,
   PharmacyPartner as DomainPartner,

@@ -71,6 +71,13 @@ GenericMed connects verified patients directly with licensed retail chemists (Fo
 ### F. Authentication & Identity
 - [x] **Multi-Persona Role-Based Gateway (`auth` role & modal):** Dedicated login and registration screens for Customers, Registered Pharmacists, Chemist Partners, and Audit Officers with `localStorage` session persistence.
 
+### H. Phase 2 PostgreSQL + Prisma DB Migration
+- [x] **Dual-Persistence Repository Layer (`server/db.ts`):** All data access functions (medicines, offers, partners, prescriptions, orders, audit events) attempt PostgreSQL via Prisma first, then transparently fall back to in-memory seed state. Zero UI regressions in offline mode.
+- [x] **Full REST API Surface (`server.ts`):** 15 endpoints covering all domain entities — medicines, offers, stock updates, partners, prescriptions, pharmacist reviews, orders, audit events, DB health check, and seeding.
+- [x] **API-Hydrated Frontend (`App.tsx`):** `bootstrapData()` runs on mount via `useEffect`, calling all 6 read endpoints with `Promise.allSettled`. State is hydrated from the API if data is present; in-memory seeds remain as warm fallback.
+- [x] **Write-Through API Persistence:** Order creation, audit event logging, offer stock updates, and prescription reviews are all fire-and-forget PATCHed / POSTed to the backend in addition to updating local React state.
+- [x] **Database Status Badge (`AdminAuditView.tsx`):** Live `/api/db-status` badge in the Admin Cockpit displays provider mode (PostgreSQL / in-memory), connection latency, and entity counts.
+
 ### G. Phase 1 National Pilot Network & Pincode Engine
 - [x] **50-Kendra Pilot Network Across 5 Healthcare Clusters:** 32 PM Jan Aushadhi Kendras + 18 retail chemists with verified Form 20B/21B licenses and state GSTINs across Mumbai MMR, Pune, Delhi NCR, Bengaluru, and Hyderabad.
 - [x] **National Pincode Serviceability & Discovery Engine (`PincodeServiceabilityModal.tsx`):** Postal resolver with real-time SLA calculation, cold-chain readiness, and nearby store density.
@@ -153,9 +160,75 @@ GenericMed connects verified patients directly with licensed retail chemists (Fo
   }
   ```
 
----
+#### 3. `GET /api/db-status`
+- **Purpose:** Real-time PostgreSQL connectivity health check with latency and entity counts.
+- **Request:** None
+- **Response:**
+  ```json
+  {
+    "isConnected": true,
+    "provider": "postgresql",
+    "latencyMs": 4,
+    "lastChecked": "2026-09-09T10:00:00.000Z",
+    "counts": {
+      "pharmacyPartners": 50,
+      "medicines": 12,
+      "offers": 120,
+      "orders": 5,
+      "auditEvents": 42
+    }
+  }
+  ```
+- **Fallback (no DB):** `"provider": "in-memory-fallback"`, `"isConnected": false`.
 
-## 6. Database Schema & Data Models Summary
+#### 4. `POST /api/db-seed`
+- **Purpose:** Seeds / re-seeds the PostgreSQL database from domain mock data via Prisma upserts.
+- **Response:** `{ "success": true, "message": "...", "counts": { ... } }`
+
+#### 5. `GET /api/medicines`
+- **Query Params:** `q` (text search), `schedule` (e.g. `Schedule H`)
+- **Response:** `{ "medicines": [...] }`
+
+#### 6. `GET /api/medicines/:id`
+- **Response:** `{ "medicine": { ... } }` or 404.
+
+#### 7. `GET /api/partners`
+- **Query Params:** `city`, `pincode`
+- **Response:** `{ "partners": [...] }`
+
+#### 8. `GET /api/offers`
+- **Query Params:** `medicineId`, `pincode` (triggers proximity ranking)
+- **Response:** `{ "offers": [...] }`
+
+#### 9. `PATCH /api/offers/:id/stock`
+- **Body:** `{ "stockState": "Low Stock", "stockCount": 12, "batchNumber": "BT-2026-99", "expiryDate": "08/2028" }`
+- **Response:** `{ "offer": { ... } }`
+
+#### 10. `GET /api/prescriptions`
+- **Query Params:** `status` (e.g. `Pending Review`)
+- **Response:** `{ "prescriptions": [...] }`
+
+#### 11. `PATCH /api/prescriptions/:id/review`
+- **Body:** `{ "status": "Verified", "notes": "...", "reviewedBy": "Sneha Patil, Reg #PH-MH-98214" }`
+- **Response:** `{ "prescription": { ... } }`
+
+#### 12. `GET /api/orders`
+- **Query Params:** `userId`
+- **Response:** `{ "orders": [...] }`
+
+#### 13. `POST /api/orders`
+- **Body:** `{ "order": { ...Order } }`
+- **Response:** `{ "order": { ... } }` (201)
+
+#### 14. `GET /api/audit-events`
+- **Query Params:** `limit` (default 200)
+- **Response:** `{ "events": [...] }`
+
+#### 15. `POST /api/audit-events`
+- **Body:** `{ "event": { ...AuditEvent } }`
+- **Response:** `{ "event": { ... } }` (201)
+
+
 
 Defined authoritatively in `src/types.ts`:
 
@@ -262,8 +335,8 @@ gantt
     Role-Based Architecture & AI Grounding :done, 2026-09, 2026-10
     50 Jan Aushadhi Kendras Pilot Network & Pincode Engine :done, 2026-09, 2026-10
     section Phase 2: Production Scale
-    PostgreSQL + Prisma DB Migration :active, 2026-10, 2026-11
-    Live Document AI Vision OCR Integration :2026-11, 2026-12
+    PostgreSQL + Prisma DB Migration :done, 2026-10, 2026-11
+    Live Document AI Vision OCR Integration :active, 2026-11, 2026-12
     section Phase 3: Chemist Integrations
     Chemist POS & ERP Sync (Marg, Mediman) :2026-12, 2027-01
     IoT Cold-Chain Telemetry Module :2027-01, 2027-02

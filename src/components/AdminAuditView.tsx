@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuditEvent, Medicine, Offer, PharmacyPartner } from '../types';
 import { ShieldCheck, Activity, AlertOctagon, Database, Filter, Download, CheckCircle2, Clock, FileSpreadsheet, Award, MapPin } from 'lucide-react';
 import { RegionalDeliveryHeatmap } from './RegionalDeliveryHeatmap';
@@ -19,6 +19,21 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterAction, setFilterAction] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // DB Status Badge State
+  const [dbStatus, setDbStatus] = useState<{
+    isConnected: boolean;
+    provider: 'postgresql' | 'in-memory-fallback';
+    latencyMs: number;
+    counts?: Record<string, number>;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/db-status')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setDbStatus(data); })
+      .catch(() => { /* silent if offline */ });
+  }, []);
 
   const filteredLogs = auditLogs.filter((log) => {
     if (filterRole !== 'all' && log.role !== filterRole) return false;
@@ -128,6 +143,37 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
         </div>
       </div>
 
+      {/* DB Status Badge */}
+      {dbStatus && (
+        <div
+          id="db-status-badge"
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-xs font-medium ${
+            dbStatus.isConnected
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}
+        >
+          <Database className={`w-4 h-4 shrink-0 ${dbStatus.isConnected ? 'text-emerald-600' : 'text-amber-500'}`} />
+          <span className="font-bold">
+            {dbStatus.isConnected ? 'PostgreSQL Connected' : 'In-Memory Fallback Active'}
+          </span>
+          <span className="text-neutral-500">•</span>
+          <span>{dbStatus.latencyMs}ms latency</span>
+          {dbStatus.counts && (
+            <>
+              <span className="text-neutral-500">•</span>
+              <span>
+                {dbStatus.counts.pharmacyPartners ?? 0} partners · {dbStatus.counts.medicines ?? 0} medicines · {dbStatus.counts.auditEvents ?? 0} audit records
+              </span>
+            </>
+          )}
+          {!dbStatus.isConnected && (
+            <span className="ml-auto text-amber-600 text-[11px]">
+              Configure DATABASE_URL in .env to enable PostgreSQL persistence
+            </span>
+          )}
+        </div>
+      )}
       {/* Sub-tab 1: Phase 1 Pilot Performance & Statutory Compliance Cockpit */}
       {activeAdminTab === 'pilot' && (
         <PilotMetricsView partners={partners} />

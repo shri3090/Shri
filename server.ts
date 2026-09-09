@@ -3,6 +3,21 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
+import {
+  checkDatabaseConnection,
+  seedDatabase,
+  getMedicinesRepository,
+  getMedicineByIdRepository,
+  getPharmacyPartnersRepository,
+  getOffersRepository,
+  updateOfferStockRepository,
+  getPrescriptionsRepository,
+  reviewPrescriptionRepository,
+  getOrdersRepository,
+  createOrderRepository,
+  getAuditEventsRepository,
+  createAuditEventRepository,
+} from './server/db';
 
 dotenv.config();
 
@@ -37,6 +52,165 @@ async function startServer() {
   // Health check endpoint
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // ── Database status ──────────────────────────────────────────────────────────
+  app.get('/api/db-status', async (_req, res) => {
+    try {
+      const status = await checkDatabaseConnection();
+      res.json(status);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Unknown error' });
+    }
+  });
+
+  // ── Database seed (dev / admin use) ─────────────────────────────────────────
+  app.post('/api/db-seed', async (_req, res) => {
+    try {
+      const result = await seedDatabase();
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err?.message || 'Seed failed' });
+    }
+  });
+
+  // ── Medicines ────────────────────────────────────────────────────────────────
+  app.get('/api/medicines', async (req, res) => {
+    try {
+      const { q, schedule } = req.query as Record<string, string>;
+      const medicines = await getMedicinesRepository(q, schedule);
+      res.json({ medicines });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.get('/api/medicines/:id', async (req, res) => {
+    try {
+      const medicine = await getMedicineByIdRepository(req.params.id);
+      if (!medicine) { res.status(404).json({ error: 'Medicine not found' }); return; }
+      res.json({ medicine });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // ── Pharmacy Partners ────────────────────────────────────────────────────────
+  app.get('/api/partners', async (req, res) => {
+    try {
+      const { city, pincode } = req.query as Record<string, string>;
+      const partners = await getPharmacyPartnersRepository(city, pincode);
+      res.json({ partners });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // ── Offers ───────────────────────────────────────────────────────────────────
+  app.get('/api/offers', async (req, res) => {
+    try {
+      const { medicineId, pincode } = req.query as Record<string, string>;
+      const offers = await getOffersRepository(medicineId, pincode);
+      res.json({ offers });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.patch('/api/offers/:id/stock', async (req, res) => {
+    try {
+      const { stockState, stockCount, batchNumber, expiryDate } = req.body;
+      if (!stockState || stockCount === undefined) {
+        res.status(400).json({ error: 'stockState and stockCount are required' });
+        return;
+      }
+      const updated = await updateOfferStockRepository(
+        req.params.id,
+        stockState,
+        Number(stockCount),
+        batchNumber,
+        expiryDate,
+      );
+      if (!updated) { res.status(404).json({ error: 'Offer not found' }); return; }
+      res.json({ offer: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // ── Prescriptions ────────────────────────────────────────────────────────────
+  app.get('/api/prescriptions', async (req, res) => {
+    try {
+      const { status } = req.query as Record<string, string>;
+      const prescriptions = await getPrescriptionsRepository(status);
+      res.json({ prescriptions });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.patch('/api/prescriptions/:id/review', async (req, res) => {
+    try {
+      const { status, notes, reviewedBy } = req.body;
+      if (!status || !reviewedBy) {
+        res.status(400).json({ error: 'status and reviewedBy are required' });
+        return;
+      }
+      const updated = await reviewPrescriptionRepository(
+        req.params.id,
+        status,
+        notes || '',
+        reviewedBy,
+      );
+      if (!updated) { res.status(404).json({ error: 'Prescription not found' }); return; }
+      res.json({ prescription: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // ── Orders ───────────────────────────────────────────────────────────────────
+  app.get('/api/orders', async (req, res) => {
+    try {
+      const { userId } = req.query as Record<string, string>;
+      const orders = await getOrdersRepository(userId);
+      res.json({ orders });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.post('/api/orders', async (req, res) => {
+    try {
+      const { order } = req.body;
+      if (!order) { res.status(400).json({ error: 'order payload required' }); return; }
+      const created = await createOrderRepository(order);
+      res.status(201).json({ order: created });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  // ── Audit Events ─────────────────────────────────────────────────────────────
+  app.get('/api/audit-events', async (req, res) => {
+    try {
+      const limit = req.query.limit ? Number(req.query.limit) : 200;
+      const events = await getAuditEventsRepository(limit);
+      res.json({ events });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
+  });
+
+  app.post('/api/audit-events', async (req, res) => {
+    try {
+      const { event } = req.body;
+      if (!event) { res.status(400).json({ error: 'event payload required' }); return; }
+      const created = await createAuditEventRepository(event);
+      res.status(201).json({ event: created });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message });
+    }
   });
 
   // Maps Grounding endpoint for regional delivery logistics intelligence

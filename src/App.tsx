@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   UserRole,
   UserProfile,
@@ -85,9 +85,9 @@ export default function App() {
 
   // Domain Entities
   const [selectedPincode, setSelectedPincode] = useState(() => user?.defaultPincode || '400018');
-  const [medicines] = useState<Medicine[]>(MEDICINES);
+  const [medicines, setMedicines] = useState<Medicine[]>(MEDICINES);
   const [offers, setOffers] = useState<Offer[]>(INITIAL_OFFERS);
-  const [partners] = useState<PharmacyPartner[]>(PHARMACY_PARTNERS);
+  const [partners, setPartners] = useState<PharmacyPartner[]>(PHARMACY_PARTNERS);
   const [selectedPartner, setSelectedPartner] = useState<PharmacyPartner>(PHARMACY_PARTNERS[0]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>(INITIAL_PRESCRIPTIONS);
   const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
@@ -100,6 +100,48 @@ export default function App() {
       quantity: 2,
     },
   ]);
+
+  // Bootstrap: hydrate state from API routes (PostgreSQL via Prisma or in-memory fallback)
+  const bootstrapData = useCallback(async () => {
+    try {
+      const [medRes, offersRes, partnersRes, rxRes, ordersRes, auditRes] = await Promise.allSettled([
+        fetch('/api/medicines').then(r => r.ok ? r.json() : null),
+        fetch('/api/offers').then(r => r.ok ? r.json() : null),
+        fetch('/api/partners').then(r => r.ok ? r.json() : null),
+        fetch('/api/prescriptions').then(r => r.ok ? r.json() : null),
+        fetch('/api/orders').then(r => r.ok ? r.json() : null),
+        fetch('/api/audit-events?limit=200').then(r => r.ok ? r.json() : null),
+      ]);
+
+      if (medRes.status === 'fulfilled' && medRes.value?.medicines?.length > 0) {
+        setMedicines(medRes.value.medicines);
+      }
+      if (offersRes.status === 'fulfilled' && offersRes.value?.offers?.length > 0) {
+        setOffers(offersRes.value.offers);
+      }
+      if (partnersRes.status === 'fulfilled' && partnersRes.value?.partners?.length > 0) {
+        const fetchedPartners: PharmacyPartner[] = partnersRes.value.partners;
+        setPartners(fetchedPartners);
+        setSelectedPartner(fetchedPartners[0]);
+      }
+      if (rxRes.status === 'fulfilled' && rxRes.value?.prescriptions?.length > 0) {
+        setPrescriptions(rxRes.value.prescriptions);
+      }
+      if (ordersRes.status === 'fulfilled' && ordersRes.value?.orders?.length > 0) {
+        setOrders(ordersRes.value.orders);
+      }
+      if (auditRes.status === 'fulfilled' && auditRes.value?.events?.length > 0) {
+        setAuditLogs(auditRes.value.events);
+      }
+    } catch (err) {
+      // Silent: in-memory mock seeds remain as fallback
+      console.warn('[GenericMed] API bootstrap failed, running on in-memory seed data.', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    bootstrapData();
+  }, [bootstrapData]);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -177,6 +219,12 @@ export default function App() {
       details,
     };
     setAuditLogs((prev) => [newLog, ...prev]);
+    // Persist to backend (fire-and-forget)
+    fetch('/api/audit-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: newLog }),
+    }).catch(() => { /* silent: audit UI already updated in-memory */ });
   };
 
   // Category filter
@@ -275,6 +323,12 @@ export default function App() {
     setCartItems([]);
     setShowCartModal(false);
     setActiveCustomerTab('orders');
+    // Persist to backend (fire-and-forget)
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: newOrder }),
+    }).catch(() => { /* silent: order already persisted in-memory */ });
     logAuditEvent(
       'ORDER_CREATED_PAYMENT_CAPTURED',
       'Order',
@@ -315,6 +369,12 @@ export default function App() {
           : rx
       )
     );
+    // Persist to backend (fire-and-forget)
+    fetch(`/api/prescriptions/${rxId}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Verified', notes, reviewedBy: 'Sneha Patil, Reg #PH-MH-98214' }),
+    }).catch(() => {});
 
     // Update any order referencing this Rx
     setOrders((prev) =>
@@ -364,6 +424,12 @@ export default function App() {
           : rx
       )
     );
+    // Persist to backend (fire-and-forget)
+    fetch(`/api/prescriptions/${rxId}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Rejected', notes: `Rejected: ${reason}`, reviewedBy: 'Sneha Patil, Reg #PH-MH-98214' }),
+    }).catch(() => {});
 
     logAuditEvent(
       'PRESCRIPTION_REJECTED',
@@ -389,6 +455,12 @@ export default function App() {
           : rx
       )
     );
+    // Persist to backend (fire-and-forget)
+    fetch(`/api/prescriptions/${rxId}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Clarification Requested', notes: `Clarification requested: ${question}`, reviewedBy: 'Sneha Patil, Reg #PH-MH-98214' }),
+    }).catch(() => {});
 
     logAuditEvent(
       'PRESCRIPTION_CLARIFICATION_REQUESTED',
@@ -416,6 +488,12 @@ export default function App() {
           : o
       )
     );
+    // Persist to backend (fire-and-forget)
+    fetch(`/api/offers/${offerId}/stock`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stockState: state, stockCount: newStock }),
+    }).catch(() => { /* silent: stock already updated in-memory */ });
 
     logAuditEvent(
       'PARTNER_STOCK_UPDATED',

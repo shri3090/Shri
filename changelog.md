@@ -7,7 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.4.0] - 2026-09-08 (Phase 1 National Pilot & Pincode Expansion)
+## [0.5.0] - 2026-09-09 (Phase 2: PostgreSQL + Prisma DB Migration)
+
+### Added
+- **Full REST API Layer (`server.ts`):**
+  - `GET /api/db-status` — Real-time PostgreSQL connectivity check, latency measurement, and entity count telemetry.
+  - `POST /api/db-seed` — Seeds the PostgreSQL database from domain mock data via Prisma ORM.
+  - `GET /api/medicines`, `GET /api/medicines/:id` — Medicine catalog with optional `?q=` text search and `?schedule=` filter.
+  - `GET /api/partners` — Pharmacy partner list with optional `?city=` and `?pincode=` filters.
+  - `GET /api/offers`, `PATCH /api/offers/:id/stock` — Offers with proximity-ranked pincode sorting; partner stock state and count updates.
+  - `GET /api/prescriptions`, `PATCH /api/prescriptions/:id/review` — Prescription queue with status filter; pharmacist review (Verified / Rejected / Clarification Requested).
+  - `GET /api/orders`, `POST /api/orders` — Order history retrieval and new order creation.
+  - `GET /api/audit-events`, `POST /api/audit-events` — Immutable audit log read (with `?limit=`) and write endpoints.
+- **Database Status Badge (`AdminAuditView.tsx`):**
+  - Live `GET /api/db-status` fetch on component mount renders an emerald (PostgreSQL) or amber (in-memory fallback) status pill showing provider, latency, and entity counts (partners, medicines, audit records).
+  - Badge `id="db-status-badge"` for end-to-end test automation targeting.
+
+### Changed
+- **`App.tsx` — API-Hydrated State Bootstrap:**
+  - Replaced static `useState(MOCK_DATA)` initializations for medicines, offers, partners, prescriptions, orders, and audit logs with a `useCallback`-wrapped `bootstrapData()` function executed via `useEffect` on first render.
+  - Uses `Promise.allSettled` across all 6 API routes; each dataset falls back silently to its in-memory seed if the API response is empty or fails (zero regressions to offline / no-DB mode).
+  - `medicines` and `partners` are now full `useState` variables (were previously `const` frozen).
+- **`App.tsx` — Fire-and-Forget API Persistence:**
+  - `handleOrderCompleted` — POSTs new order to `POST /api/orders`.
+  - `logAuditEvent` — POSTs every audit event to `POST /api/audit-events`.
+  - `handleUpdateOfferStock` — PATCHes stock state and count to `PATCH /api/offers/:id/stock`.
+  - `handleApproveRx`, `handleRejectRx`, `handleRequestClarification` — Each PATCHes prescription review status to `PATCH /api/prescriptions/:id/review`.
+- **`server/db.ts` — Import Naming Fix:**
+  - Corrected import of `INITIAL_AUDIT_LOGS` (was incorrectly referenced as `INITIAL_AUDIT_EVENTS`) and `INITIAL_REFILLS` (was incorrectly referenced as `REFILL_REMINDERS`) from `src/data/mockData.ts`. Internal aliases maintain backward compatibility with all existing downstream usages.
+
+---
+
+
 
 ### Added
 - **Phase 1 Pilot Network of 50 Jan Aushadhi Kendras & Licensed Partners:**
