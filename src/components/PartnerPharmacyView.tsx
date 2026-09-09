@@ -108,20 +108,29 @@ export const PartnerPharmacyView: React.FC<PartnerPharmacyViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-neutral-500 hidden sm:inline">Partner Store:</span>
+          <span className="text-neutral-500 hidden sm:inline">Pilot Store (50 Live):</span>
           <select
+            id="select-partner-kendra"
             value={partner.id}
             onChange={(e) => {
               const p = allPartners.find((x) => x.id === e.target.value);
               if (p) onSelectPartner(p);
             }}
-            className="bg-white border border-purple-300 rounded-lg p-2 text-xs font-semibold text-neutral-800"
+            className="bg-white border border-purple-300 rounded-lg p-2 text-xs font-semibold text-neutral-800 focus:outline-none focus:border-purple-600 shadow-xs max-w-xs"
           >
-            {allPartners.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.city})
-              </option>
-            ))}
+            {['Mumbai', 'Pune', 'Delhi', 'Bengaluru', 'Hyderabad'].map((city) => {
+              const cityPartners = allPartners.filter((x) => x.city === city);
+              if (cityPartners.length === 0) return null;
+              return (
+                <optgroup key={city} label={`📍 ${city} (${cityPartners.length} Stores)`}>
+                  {cityPartners.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} • {p.pincode}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
           </select>
         </div>
       </div>

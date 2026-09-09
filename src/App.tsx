@@ -35,6 +35,8 @@ import { AdminAuditView } from './components/AdminAuditView';
 import { PrdComplianceModal } from './components/PrdComplianceModal';
 import { SupportModal } from './components/SupportModal';
 import { AuthScreen } from './components/AuthScreen';
+import { PincodeServiceabilityModal } from './components/PincodeServiceabilityModal';
+import { getPincodeServiceability } from './data/regionalDeliveryData';
 
 import {
   Search,
@@ -214,9 +216,25 @@ export default function App() {
     });
   }, [medicines, selectedCategory, searchQuery]);
 
-  // Offers helper
+  // Pincode-Aware Offers Helper (Phase 1 National Pilot)
   const getOffersForMedicine = (medId: string) => {
-    return offers.filter((o) => o.medicineId === medId);
+    const medOffers = offers.filter((o) => o.medicineId === medId);
+    if (medOffers.length === 0) return [];
+
+    const pinInfo = getPincodeServiceability(selectedPincode);
+
+    // Sort: exact pincode match first, then same city match, then lowest totalPayableCost
+    return [...medOffers].sort((a, b) => {
+      const aExact = a.partner?.pincode === selectedPincode ? 1 : 0;
+      const bExact = b.partner?.pincode === selectedPincode ? 1 : 0;
+      if (aExact !== bExact) return bExact - aExact;
+
+      const aCity = a.partner?.city?.toLowerCase() === pinInfo.city.toLowerCase() ? 1 : 0;
+      const bCity = b.partner?.city?.toLowerCase() === pinInfo.city.toLowerCase() ? 1 : 0;
+      if (aCity !== bCity) return bCity - aCity;
+
+      return a.totalPayableCost - b.totalPayableCost;
+    });
   };
 
   // Cart operations
@@ -884,7 +902,7 @@ export default function App() {
 
         {/* ======================= ROLE 4: ADMIN & AUDIT COCKPIT ======================= */}
         {currentRole === 'admin' && (
-          <AdminAuditView auditLogs={auditLogs} />
+          <AdminAuditView auditLogs={auditLogs} partners={partners} />
         )}
 
         {/* ======================= ROLE 5: DEDICATED LOGIN & REGISTRATION SCREEN ======================= */}
@@ -991,43 +1009,26 @@ export default function App() {
         <SupportModal onClose={() => setShowSupportModal(false)} />
       )}
 
-      {/* 6. Change Pincode Modal */}
+      {/* 6. Change Pincode & Serviceability Modal (Phase 1 National Pilot) */}
       {showPincodeModal && (
-        <div className="fixed inset-0 z-50 bg-neutral-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-neutral-200 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-sm text-neutral-900">Change Delivery Location</h3>
-              <button onClick={() => setShowPincodeModal(false)} className="text-neutral-400 hover:text-neutral-700">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-xs text-neutral-500">
-              Enter your 6-digit postal code to calculate hyper-local chemist delivery fees and stock availability.
-            </p>
-            <div className="space-y-2">
-              <input
-                type="text"
-                maxLength={6}
-                value={selectedPincode}
-                onChange={(e) => setSelectedPincode(e.target.value)}
-                placeholder="400018"
-                className="w-full p-2.5 border border-neutral-300 rounded-lg text-sm font-mono text-center font-bold text-neutral-900"
-              />
-              <div className="text-[11px] text-emerald-700 font-medium text-center">
-                ✓ 5 Jan Aushadhi Kendras & Licensed Chemists active in this zone
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setShowPincodeModal(false);
-                showToast(`Location set to Mumbai - ${selectedPincode}`);
-              }}
-              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition-colors"
-            >
-              Update Pincode
-            </button>
-          </div>
-        </div>
+        <PincodeServiceabilityModal
+          currentPincode={selectedPincode}
+          allPartners={partners}
+          onClose={() => setShowPincodeModal(false)}
+          onSelectPincode={(newPin) => {
+            setSelectedPincode(newPin);
+            const pinInfo = getPincodeServiceability(newPin);
+            logAuditEvent(
+              'PINCODE_ZONE_CHANGED',
+              'DeliveryZone',
+              newPin,
+              `Delivery zone updated to ${newPin} (${pinInfo.area}, ${pinInfo.city}). Nearest Hub: ${pinInfo.primaryKendraName}. SLA: ${pinInfo.slaLabel}`,
+              user?.name || 'Customer',
+              currentRole
+            );
+            showToast(`Delivery zone set to ${pinInfo.city} - ${newPin} (${pinInfo.slaLabel})`);
+          }}
+        />
       )}
 
       {/* 7. Dedicated Authentication Modal (Login & Register) */}

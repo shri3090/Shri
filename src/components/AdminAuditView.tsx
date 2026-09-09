@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
-import { AuditEvent, Medicine, Offer } from '../types';
-import { ShieldCheck, Activity, AlertOctagon, Database, Filter, Download, CheckCircle2, Clock, FileSpreadsheet } from 'lucide-react';
+import { AuditEvent, Medicine, Offer, PharmacyPartner } from '../types';
+import { ShieldCheck, Activity, AlertOctagon, Database, Filter, Download, CheckCircle2, Clock, FileSpreadsheet, Award, MapPin } from 'lucide-react';
 import { RegionalDeliveryHeatmap } from './RegionalDeliveryHeatmap';
+import { PilotMetricsView } from './PilotMetricsView';
+import { PHARMACY_PARTNERS } from '../data/mockData';
 
 interface AdminAuditViewProps {
   auditLogs: AuditEvent[];
+  partners?: PharmacyPartner[];
   onClearFilter?: () => void;
 }
 
 export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
   auditLogs,
+  partners = PHARMACY_PARTNERS,
 }) => {
+  const [activeAdminTab, setActiveAdminTab] = useState<'pilot' | 'audit' | 'heatmap'>('pilot');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterAction, setFilterAction] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -69,15 +74,68 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={exportCsv}
-            className="px-3.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export Audit Trail (CSV)</span>
-          </button>
+          {/* Sub-tab Switcher */}
+          <div className="bg-rose-100/60 p-1 rounded-xl flex items-center gap-1 text-xs font-semibold">
+            <button
+              id="tab-admin-pilot"
+              onClick={() => setActiveAdminTab('pilot')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeAdminTab === 'pilot'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-neutral-700 hover:text-rose-900'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>Phase 1 Pilot Cockpit (50 Stores)</span>
+            </button>
+
+            <button
+              id="tab-admin-audit"
+              onClick={() => setActiveAdminTab('audit')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeAdminTab === 'audit'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-neutral-700 hover:text-rose-900'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>Audit Logs</span>
+            </button>
+
+            <button
+              id="tab-admin-heatmap"
+              onClick={() => setActiveAdminTab('heatmap')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeAdminTab === 'heatmap'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-neutral-700 hover:text-rose-900'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Logistics Heatmap</span>
+            </button>
+          </div>
+
+          {activeAdminTab === 'audit' && (
+            <button
+              onClick={exportCsv}
+              className="px-3.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Sub-tab 1: Phase 1 Pilot Performance & Statutory Compliance Cockpit */}
+      {activeAdminTab === 'pilot' && (
+        <PilotMetricsView partners={partners} />
+      )}
+
+      {/* Sub-tab 2: Immutable Regulatory Audit Trail & KPIs */}
+      {activeAdminTab === 'audit' && (
+        <div className="space-y-6">
 
       {/* PRD North Star & Core Engineering Metrics (PRD Section 4 & 14) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -260,6 +318,13 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
           </table>
         </div>
       </div>
+      </div>
+      )}
+
+      {/* Sub-tab 3: Regional Order Delivery Concentration Heat Map */}
+      {activeAdminTab === 'heatmap' && (
+        <RegionalDeliveryHeatmap />
+      )}
     </div>
   );
 };

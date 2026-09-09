@@ -1,0 +1,273 @@
+# GenericMed - Persistent Long-Term Memory
+
+> **System Notice:** This document serves as the permanent, authoritative knowledge base for the **GenericMed** platform. AI coding assistants should consult this document to understand the system architecture, business rules, current implementation state, and immediate roadmap before proposing code changes.
+
+---
+
+## 1. Project Overview
+
+**GenericMed** is an Indian pharmaceutical e-commerce and regulatory compliance marketplace designed to solve three structural problems in the Indian healthcare supply chain:
+
+1. **Massive Drug Price Inflation:** Branded formulations often trade at a 300% to 850% markup over identical chemical salts manufactured under Indian Pharmacopoeia (IP) standards.
+2. **Deceptive E-Commerce Pricing:** Platforms advertise unrealistically low drug rates but add unexpected doorstep delivery charges, packaging fees, and convenience taxes during final payment checkout.
+3. **Regulatory Non-Compliance & Safety Gaps:** Dispensing Schedule H and H1 medicines without strict verification by a licensed registered pharmacist (Rule 65, Drugs and Cosmetics Rules, 1945) poses legal and clinical hazards.
+
+GenericMed connects verified patients directly with licensed retail chemists (Form 20B/21B) and government-backed **Pradhan Mantri Bhartiya Janaushadhi Kendras (PMBJK)**. It features a transparent total-payable cost comparison engine, automated prescription OCR parsing, a dedicated registered pharmacist sign-off queue, D3-powered regional logistics density monitoring, and an immutable audit log system.
+
+---
+
+## 2. Tech Stack & Infrastructure
+
+| Layer | Technologies & Libraries | Version | Purpose / Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **Frontend Core** | React | `^19.0.1` | Component lifecycle, concurrent rendering, dynamic views |
+| **Type System** | TypeScript | `~5.8.2` | Compile-time validation across all domain schemas |
+| **Build & Bundler** | Vite | `^6.2.3` | Ultra-fast HMR, ES module serving, static bundling |
+| **Backend Server** | Node.js + Express | `^4.21.2` | REST endpoints, Vite dev middleware, static asset serving |
+| **Execution Tooling** | `tsx` | `^4.21.0` | Direct TypeScript execution for server without manual compile |
+| **CSS & Styling** | Tailwind CSS (v4) | `^4.1.14` | High-performance CSS engine via `@tailwindcss/vite` |
+| **AI & Grounding** | Google Gen AI SDK | `^2.4.0` | `@google/genai` with `gemini-3.5-flash` & Google Maps Grounding |
+| **Visualization** | D3.js | `^7.9.0` | SVG coordinate rendering, color scales, delivery heatmaps |
+| **Micro-Animations** | Motion (Framer) | `^12.23.24` | Layout transitions, modals, order timeline progress pulses |
+| **Icons** | Lucide React | `^0.546.0` | Consistent, accessible clinical and interface iconography |
+| **Markdown Parser** | React Markdown | `^10.1.0` | Rendering AI logistics insights and PRD documentation |
+
+---
+
+## 3. Features Completed & Functional Status
+
+### A. Patient / Customer Experience (`customer` role)
+- [x] **Zero-Markup Search & Salt Auto-Complete:** Search by popular brand names (e.g. *Dolo 650*, *Glycomet 500*, *Augmentin 625*) or exact chemical molecules (*Paracetamol*, *Metformin Hydrochloride*, *Amoxicillin + Clavulanic Acid*).
+- [x] **Verified Total-Payable Cost Engine:** Real-time breakdown of Base Price + Doorstep Courier Fee + Packaging Charge + GST vs. Standard Branded MRP, highlighting savings up to 85%.
+- [x] **Digital Prescription Upload & Mock OCR:** Multi-file image upload with instant simulated OCR extraction of doctor details, council registration numbers, drug salts, and durations.
+- [x] **Transparent Cart & Checkout Modal:** Clear fee breakdown, pincode serviceability validation, and payment method selection (UPI, NetBanking, Card, Cash on Delivery).
+- [x] **Multi-Stage Order Fulfillment Tracker:** Real-time progress tracker with tracking IDs and milestone timeline (Order Placed $\rightarrow$ Rx Verification $\rightarrow$ Pharmacy Processing $\rightarrow$ Dispatched $\rightarrow$ Delivered).
+- [x] **Digital Tax Invoice Modal:** CDSCO & GSTIN-compliant digital receipt generation displaying partner chemist drug license number (Form 20B/21B), batch numbers, and expiry dates.
+- [x] **30-Day Chronic Refill Manager:** Automated countdown for chronic medicines (Metformin, Telmisartan, Atorvastatin) with 1-click reordering capability.
+
+### B. Pharmacist Verification Portal (`pharmacist` role)
+- [x] **Dedicated Verification Queue:** Filterable queue of incoming patient prescriptions (`Pending Review`, `Verified`, `Rejected`, `Clarification Requested`).
+- [x] **Doctor Council Registration Validation:** Displays prescribing physician name, clinic address, and State Medical Council registration ID.
+- [x] **Clinical Decision Actions:**
+  - `Approve`: Automatically updates associated orders to `Pharmacy Processing` and affixes registered pharmacist license sign-off.
+  - `Reject`: Requires clinical reason entry (e.g. invalid date, unreadable dosage, banned formulation) and alerts customer.
+  - `Clarification Requested`: Direct query mechanism to prescribing clinic/customer.
+
+### C. Licensed Chemist Partner Portal (`partner` role)
+- [x] **Pharmacy Inventory Management:** Live partner switcher (e.g., *Jan Aushadhi Kendra Bandra*, *Apollo Pharmacy Hub*, *Wellness Forever Chemist*).
+- [x] **Stock State & Freshness Controller:** Instant toggling of inventory counts (`In Stock`, `Low Stock`, `Out of Stock`) and automated timestamping.
+- [x] **Price Adjustment Engine:** Real-time adjustment of base generic prices and delivery surcharges.
+- [x] **Order Packing & Dispatch Console:** Direct packing verification with batch number verification and courier handover.
+
+### D. Regulatory & Audit Cockpit (`admin` role)
+- [x] **Immutable Tamper-Evident Audit Trail (FR-ADM-04):** Comprehensive tabular log of all platform activities with filtering by action category, actor name, and role.
+- [x] **JSON Audit Export:** 1-click export of system audit records for statutory inspection by State Drug Inspectors.
+
+### E. AI Logistics & Grounding Intelligence
+- [x] **Regional Delivery Heatmap (D3.js):** Geographic delivery corridor density across Indian metropolitan and tier-2 clusters (Mumbai, Delhi-NCR, Bengaluru, Pune, Hyderabad, Chennai).
+- [x] **Peak Hours Transit Heatmap:** Analysis of OPD clinic release congestion corridors (10:00–13:00 and 17:00–21:00) impacting delivery SLAs.
+- [x] **Google Maps Grounded Logistics Intel (`/api/regional-logistics-intel`):** Calls `gemini-3.5-flash` with Google Maps tool to ground local Jan Aushadhi Kendras, hospital dispatch counters, and cold-chain hubs. Includes offline fallback links.
+
+### F. Authentication & Identity
+- [x] **Multi-Persona Role-Based Gateway (`auth` role & modal):** Dedicated login and registration screens for Customers, Registered Pharmacists, Chemist Partners, and Audit Officers with `localStorage` session persistence.
+
+### G. Phase 1 National Pilot Network & Pincode Engine
+- [x] **50-Kendra Pilot Network Across 5 Healthcare Clusters:** 32 PM Jan Aushadhi Kendras + 18 retail chemists with verified Form 20B/21B licenses and state GSTINs across Mumbai MMR, Pune, Delhi NCR, Bengaluru, and Hyderabad.
+- [x] **National Pincode Serviceability & Discovery Engine (`PincodeServiceabilityModal.tsx`):** Postal resolver with real-time SLA calculation, cold-chain readiness, and nearby store density.
+- [x] **Pincode-Aware Proximity Offer Ranking:** Automatically prioritizes local Jan Aushadhi Kendras matching the user's delivery pincode.
+- [x] **Partner Multi-Store Grouped Selector:** Grouped `<optgroup>` store selector in the partner portal enabling seamless inventory management across all 50 stores.
+- [x] **Phase 1 Pilot Performance & Statutory Compliance KPI Cockpit (`PilotMetricsView.tsx`):** Real-time monitoring of 5 pilot KPIs (50/50 onboarded, 98.4% cold-chain, 32.8 min delivery SLA, ₹15.48L savings, 11.4 min Rx review turnaround).
+
+---
+
+## 4. Pending Features & Product Backlog
+
+- [ ] **Real OCR via Vision AI:** Replace simulated OCR parsing with Google Cloud Document AI / Gemini Vision API for messy handwritten Indian prescriptions.
+- [ ] **Chemist POS / ERP Webhook Sync:** Bidirectional inventory synchronization with popular Indian pharmacy software (Marg ERP, Mediman, POSibolt).
+- [ ] **Automated WhatsApp / SMS OTP Gateway:** Notification updates via WhatsApp Business API for prescription approval and delivery milestones.
+- [ ] **Direct Payment Gateway Integration:** Razorpay / Cashfree native UPI intent and auto-debit subscriptions for monthly chronic refills.
+- [ ] **IoT Cold-Chain Telemetry:** Integration with BLE/cellular temperature sensor loggers ensuring biological items (Insulin, Vaccines) remain between 2°C and 8°C throughout transit.
+- [ ] **Multilingual Vernacular Support:** Regional Indian language translation (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali).
+
+---
+
+## 5. API Endpoints Specification
+
+### Express Server Routes (`server.ts`)
+
+#### 1. `GET /api/health`
+- **Purpose:** Server health and uptime verification.
+- **Request:** None
+- **Response:**
+  ```json
+  {
+    "status": "ok",
+    "timestamp": "2026-09-08T09:25:00.000Z"
+  }
+  ```
+
+#### 2. `POST /api/regional-logistics-intel`
+- **Purpose:** Fetches AI-synthesized regional logistics intelligence grounded with real Google Maps data.
+- **Headers:** `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "regionName": "Bandra West, Mumbai",
+    "state": "Maharashtra",
+    "latitude": 19.0596,
+    "longitude": 72.8295,
+    "queryType": "pharmacy_network"
+  }
+  ```
+- **Response (Google Maps Grounded):**
+  ```json
+  {
+    "source": "google-maps-grounded",
+    "insights": "Regional logistics assessment with verified Jan Aushadhi Kendras...",
+    "groundingLinks": [
+      {
+        "title": "Jan Aushadhi Kendra - Bandra West",
+        "uri": "https://maps.google.com/?cid=...",
+        "reviewSnippet": "All generic substitutes available at subsidized rates."
+      }
+    ],
+    "location": {
+      "latitude": 19.0596,
+      "longitude": 72.8295,
+      "regionName": "Bandra West, Mumbai"
+    }
+  }
+  ```
+- **Response (Offline / No Key Fallback):**
+  ```json
+  {
+    "source": "fallback",
+    "insights": "**Bandra West Logistics Overview**: High delivery corridor with multiple verified Jan Aushadhi Kendras...",
+    "groundingLinks": [
+      {
+        "title": "Pradhan Mantri Bhartiya Janaushadhi Pariyojana Kendra (Bandra West)",
+        "uri": "https://www.google.com/maps/search/Jan+Aushadhi+Kendra+Bandra+West+Maharashtra"
+      }
+    ],
+    "location": { "latitude": 19.0596, "longitude": 72.8295, "regionName": "Bandra West, Mumbai" }
+  }
+  ```
+
+---
+
+## 6. Database Schema & Data Models Summary
+
+Defined authoritatively in `src/types.ts`:
+
+```mermaid
+erDiagram
+    USER ||--o{ ADDRESS : "has many"
+    USER ||--o{ ORDER : "places"
+    USER ||--o{ PRESCRIPTION : "uploads"
+    USER ||--o{ REFILL_REMINDER : "manages"
+    MEDICINE }|--|| COMPOSITION : "contains salt"
+    MEDICINE ||--o{ OFFER : "quoted by"
+    PHARMACY_PARTNER ||--o{ OFFER : "lists"
+    ORDER ||--o{ CART_ITEM : "contains"
+    ORDER }|--|| PHARMACY_PARTNER : "fulfilled by"
+    ORDER ||--o| PRESCRIPTION : "verified against"
+    AUDIT_EVENT }|--|| USER : "performed by"
+```
+
+### Entity Specifications
+
+1. **`UserProfile`:** User identity, role (`customer | pharmacist | partner | admin | auth`), phone, email, default pincode, GSTIN, pharmacy license number, and council registration number.
+2. **`Medicine`:** Product catalog entity:
+   - `id`: Unique identifier (e.g. `med-paracetamol-650`).
+   - `name`: Generic formulation name.
+   - `composition`: Active chemical salt (e.g. `Paracetamol 650mg IP`).
+   - `dosageForm`: `Tablet | Capsule | Syrup | Injection | Inhaler | Ointment`.
+   - `isGeneric`: Boolean flag.
+   - `scheduleCategory`: `Schedule H | Schedule H1 | OTC | Schedule X`.
+   - `requiresPrescription`: Boolean flag.
+   - `brandedAlternativeName`: Reference branded medicine (e.g. `Dolo 650`, `Calpol 650`).
+   - `brandedMrp`: Market price of branded equivalent.
+   - `genericMrp`: Base Maximum Retail Price of generic equivalent.
+3. **`PharmacyPartner`:** Retail chemist or Kendra entity:
+   - `id`: Partner identifier (e.g. `partner-pmbjk-01`).
+   - `name`: Chemist business name.
+   - `licenseNumber`: Form 20B/21B statutory drug license string.
+   - `gstin`: 15-character GSTIN.
+   - `isJanAushadhiKendra`: Boolean flag indicating government scheme affiliation.
+   - `verifiedBadge`: Statutory verification status.
+4. **`Offer`:** Specific stock quote from a partner chemist:
+   - `basePrice`, `deliveryFee`, `packagingFee`, `gstPercent`.
+   - `totalPayableCost`: Exact calculated checkout cost.
+   - `savingsVsBranded`, `savingsPercent`.
+   - `stockState`: `'In Stock' | 'Low Stock' | 'Out of Stock' | 'Stale'`.
+   - `batchNumber`, `expiryDate`.
+5. **`Prescription`:** Digital Rx entity:
+   - `userId`, `fileName`, `uploadedAt`, `status`.
+   - `doctorName`, `doctorRegNo`, `clinicName`.
+   - `extractedMedicines`: Array of `{ name, dosage, duration, verified }`.
+   - `reviewerNotes`, `reviewedBy`, `reviewedAt`.
+6. **`Order`:** Transaction and fulfillment record:
+   - `orderNumber`, `items`, `totalPayable`, `deliveryAddress`, `paymentMethod`, `paymentStatus`.
+   - `fulfillmentStatus`: `'Order Placed' | 'Rx Verification' | 'Pharmacy Processing' | 'Dispatched' | 'Out for Delivery' | 'Delivered' | 'Cancelled'`.
+   - `timeline`: Chronological progression log.
+   - `invoiceNumber`, `trackingNumber`.
+7. **`AuditEvent`:** Statutory tamper-evident compliance log:
+   - `id`, `timestamp`, `actor`, `role`, `action`, `entity`, `entityId`, `details`.
+
+---
+
+## 7. Important Business Logic & Invariants
+
+### A. Total Payable Cost & Savings Formula
+$$\text{Total Payable} = \text{Offer Base Price} + \text{Delivery Fee} + \text{Packaging Fee} + \left(\text{Base Price} \times \frac{\text{GST \%}}{100}\right)$$
+$$\text{Savings Amount} = \text{Branded MRP} - \text{Total Payable}$$
+$$\text{Savings Percentage} = \left(\frac{\text{Savings Amount}}{\text{Branded MRP}}\right) \times 100$$
+
+### B. Prescription Verification State Machine
+```
+[Uploaded] ---> [Pending Review]
+                     |
+        +------------+------------+
+        |                         |
+  (Pharmacist               (Pharmacist
+   Approves)                 Rejects)
+        |                         |
+        v                         v
+   [Verified]                [Rejected]
+        |
+        +--> Orders advance from "Rx Verification" to "Pharmacy Processing"
+```
+
+### C. Schedule Compliance Checks
+- If any cart item contains `requiresPrescription === true` or `scheduleCategory !== 'OTC'`, the order checkout enforces valid `prescriptionId` attachment.
+- Schedule X items trigger a regulatory restriction alert requiring tripartite paper documentation before physical dispatch.
+
+---
+
+## 8. Known Issues & Technical Considerations
+
+1. **Simulated Prescription OCR:** The client-side mock currently parses mocked medicine rows; real production deployment requires hooking into a live document vision pipeline.
+2. **In-Memory Volatility:** Changes made to orders, inventory stock, or prescriptions reset to default seed data if the browser cache is purged. (User profile and active role persist in `localStorage`).
+3. **Environment Variable Dependency:** When `GEMINI_API_KEY` is not present in `.env`, the backend falls back to regional search URLs. To test live Maps Grounding, set a valid key in `.env`.
+
+---
+
+## 9. Future Roadmap
+
+```mermaid
+gantt
+    title GenericMed Development & Deployment Roadmap
+    dateFormat  YYYY-MM
+    section Phase 1: Pilot & Compliance
+    Role-Based Architecture & AI Grounding :done, 2026-09, 2026-10
+    50 Jan Aushadhi Kendras Pilot Network & Pincode Engine :done, 2026-09, 2026-10
+    section Phase 2: Production Scale
+    PostgreSQL + Prisma DB Migration :active, 2026-10, 2026-11
+    Live Document AI Vision OCR Integration :2026-11, 2026-12
+    section Phase 3: Chemist Integrations
+    Chemist POS & ERP Sync (Marg, Mediman) :2026-12, 2027-01
+    IoT Cold-Chain Telemetry Module :2027-01, 2027-02
+    section Phase 4: Expansion
+    Vernacular Voice & Multilingual Localization :2027-02, 2027-04
+    National Pincode Expansion (Tier 1-4) :2027-04, 2027-07
+```

@@ -16,6 +16,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { UserRole, UserProfile } from '../types';
+import { getPincodeServiceability } from '../data/regionalDeliveryData';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -160,16 +161,18 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Location & Pincode Selector */}
+          {/* Location & Pincode Selector (Phase 1 National Pilot) */}
           <button
             id="btn-change-pincode"
             onClick={onChangePincode}
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-neutral-300 text-xs text-neutral-700 bg-neutral-50 transition-colors"
-            title="Change Delivery Location"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-emerald-300 text-xs text-neutral-700 bg-neutral-50 hover:bg-white transition-all shadow-xs"
+            title="Change Delivery Location & Check 50 Pilot Kendras"
           >
             <MapPin className="w-4 h-4 text-emerald-600" />
             <span className="text-neutral-500">Deliver to:</span>
-            <span className="font-semibold text-neutral-900">Mumbai {selectedPincode}</span>
+            <span className="font-semibold text-neutral-900">
+              {getPincodeServiceability(selectedPincode).city} {selectedPincode}
+            </span>
           </button>
 
           {/* Actions */}

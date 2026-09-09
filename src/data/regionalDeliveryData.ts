@@ -361,3 +361,490 @@ export const REGIONAL_DELIVERY_DATA: RegionalDeliveryZone[] = [
     logisticsHub: 'HITEC City Pharma Depot & Banjara Hills Central Pharmacy',
   },
 ];
+
+export interface PincodeServiceabilityInfo {
+  pincode: string;
+  area: string;
+  city: string;
+  state: string;
+  cluster: 'MMR (Mumbai)' | 'Pune' | 'Delhi NCR' | 'Bengaluru' | 'Hyderabad' | 'Regional Express';
+  slaLabel: string;
+  estimatedMinutes: number;
+  deliveryFee: number;
+  isHyperlocal: boolean;
+  coldChainReady: boolean;
+  nearbyKendraCount: number;
+  primaryKendraName: string;
+}
+
+export const PINCODE_DIRECTORY: Record<string, PincodeServiceabilityInfo> = {
+  // Mumbai MMR
+  '400001': {
+    pincode: '400001',
+    area: 'Fort / Ballard Estate',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '35 mins (Hyperlocal Bike)',
+    estimatedMinutes: 35,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1001 (Fort)',
+  },
+  '400005': {
+    pincode: '400005',
+    area: 'Colaba / Cuffe Parade',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '40 mins (Hyperlocal Bike)',
+    estimatedMinutes: 40,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 3,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1002 (Colaba)',
+  },
+  '400012': {
+    pincode: '400012',
+    area: 'Parel / KEM Hospital Corridor',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '25 mins (Priority Medical Corridor)',
+    estimatedMinutes: 25,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 6,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1003 (Parel KEM)',
+  },
+  '400018': {
+    pincode: '400018',
+    area: 'Worli / Lower Parel West',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '30 mins (Hyperlocal Bike)',
+    estimatedMinutes: 30,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1042 (Worli)',
+  },
+  '400025': {
+    pincode: '400025',
+    area: 'Prabhadevi / Siddhivinayak',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '30 mins (Hyperlocal Bike)',
+    estimatedMinutes: 30,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'Apollo Pharmacy Partner Hub (Prabhadevi)',
+  },
+  '400028': {
+    pincode: '400028',
+    area: 'Dadar West / Shivaji Park',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '30 mins (Hyperlocal Bike)',
+    estimatedMinutes: 30,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1004 (Dadar)',
+  },
+  '400050': {
+    pincode: '400050',
+    area: 'Bandra West / Hill Road',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '35 mins (Hyperlocal Bike)',
+    estimatedMinutes: 35,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1005 (Bandra)',
+  },
+  '400051': {
+    pincode: '400051',
+    area: 'Bandra Kurla Complex (BKC)',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '30 mins (Express Courier)',
+    estimatedMinutes: 30,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1006 (BKC)',
+  },
+  '400058': {
+    pincode: '400058',
+    area: 'Andheri West / Lokhandwala',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '40 mins (Hyperlocal Bike)',
+    estimatedMinutes: 40,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1007 (Andheri)',
+  },
+  '400601': {
+    pincode: '400601',
+    area: 'Thane West Station Circle',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '45 mins (Regional Node)',
+    estimatedMinutes: 45,
+    deliveryFee: 18,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1008 (Thane)',
+  },
+  '400703': {
+    pincode: '400703',
+    area: 'Vashi Sector 17',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    cluster: 'MMR (Mumbai)',
+    slaLabel: '35 mins (Navi Mumbai Hub)',
+    estimatedMinutes: 35,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 3,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1009 (Vashi)',
+  },
+
+  // Pune
+  '411001': {
+    pincode: '411001',
+    area: 'Pune Camp / Pune Station',
+    city: 'Pune',
+    state: 'Maharashtra',
+    cluster: 'Pune',
+    slaLabel: '35 mins (Hyperlocal)',
+    estimatedMinutes: 35,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1013 (Pune Camp)',
+  },
+  '411004': {
+    pincode: '411004',
+    area: 'Deccan Gymkhana / Prabhat Rd',
+    city: 'Pune',
+    state: 'Maharashtra',
+    cluster: 'Pune',
+    slaLabel: '30 mins (Hyperlocal)',
+    estimatedMinutes: 30,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1011 (Deccan)',
+  },
+  '411005': {
+    pincode: '411005',
+    area: 'Shivajinagar / JM Road',
+    city: 'Pune',
+    state: 'Maharashtra',
+    cluster: 'Pune',
+    slaLabel: '30 mins (Hyperlocal)',
+    estimatedMinutes: 30,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1012 (Shivajinagar)',
+  },
+  '411038': {
+    pincode: '411038',
+    area: 'Kothrud / Paud Road',
+    city: 'Pune',
+    state: 'Maharashtra',
+    cluster: 'Pune',
+    slaLabel: '25 mins (Direct Kendra Dispatch)',
+    estimatedMinutes: 25,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1010 (Kothrud)',
+  },
+
+  // Delhi NCR
+  '110001': {
+    pincode: '110001',
+    area: 'Connaught Place / Central Delhi',
+    city: 'Delhi',
+    state: 'Delhi',
+    cluster: 'Delhi NCR',
+    slaLabel: '30 mins (Central Corridor)',
+    estimatedMinutes: 30,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1020 (CP)',
+  },
+  '110016': {
+    pincode: '110016',
+    area: 'Hauz Khas / Green Park',
+    city: 'Delhi',
+    state: 'Delhi',
+    cluster: 'Delhi NCR',
+    slaLabel: '35 mins (Hyperlocal)',
+    estimatedMinutes: 35,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1018 (Hauz Khas)',
+  },
+  '110017': {
+    pincode: '110017',
+    area: 'Saket / Max Hospital Belt',
+    city: 'Delhi',
+    state: 'Delhi',
+    cluster: 'Delhi NCR',
+    slaLabel: '25 mins (Medical Campus Hub)',
+    estimatedMinutes: 25,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1017 (Saket)',
+  },
+  '110029': {
+    pincode: '110029',
+    area: 'Ansari Nagar / AIIMS Complex',
+    city: 'Delhi',
+    state: 'Delhi',
+    cluster: 'Delhi NCR',
+    slaLabel: '20 mins (AIIMS Priority Express)',
+    estimatedMinutes: 20,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 6,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1016 (AIIMS)',
+  },
+  '110048': {
+    pincode: '110048',
+    area: 'Greater Kailash (GK-1 & GK-2)',
+    city: 'Delhi',
+    state: 'Delhi',
+    cluster: 'Delhi NCR',
+    slaLabel: '35 mins (Hyperlocal)',
+    estimatedMinutes: 35,
+    deliveryFee: 15,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1019 (GK-1)',
+  },
+
+  // Bengaluru
+  '560001': {
+    pincode: '560001',
+    area: 'MG Road / Brigade Road',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    cluster: 'Bengaluru',
+    slaLabel: '35 mins (CBD Corridor)',
+    estimatedMinutes: 35,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1027 (MG Road)',
+  },
+  '560034': {
+    pincode: '560034',
+    area: 'Koramangala 4th-8th Block',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    cluster: 'Bengaluru',
+    slaLabel: '25 mins (Hyperlocal Bike)',
+    estimatedMinutes: 25,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1023 (Koramangala)',
+  },
+  '560038': {
+    pincode: '560038',
+    area: 'Indiranagar 100ft Road',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    cluster: 'Bengaluru',
+    slaLabel: '30 mins (Hyperlocal)',
+    estimatedMinutes: 30,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1025 (Indiranagar)',
+  },
+  '560066': {
+    pincode: '560066',
+    area: 'Whitefield / ITPL Corridor',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    cluster: 'Bengaluru',
+    slaLabel: '40 mins (Tech Park Node)',
+    estimatedMinutes: 40,
+    deliveryFee: 18,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 3,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1026 (Whitefield)',
+  },
+  '560102': {
+    pincode: '560102',
+    area: 'HSR Layout Sectors 1-7',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    cluster: 'Bengaluru',
+    slaLabel: '30 mins (Hyperlocal)',
+    estimatedMinutes: 30,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1024 (HSR)',
+  },
+
+  // Hyderabad
+  '500001': {
+    pincode: '500001',
+    area: 'Abids / Koti Healthcare Belt',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    cluster: 'Hyderabad',
+    slaLabel: '35 mins (Central Hub)',
+    estimatedMinutes: 35,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1033 (Secunderabad)',
+  },
+  '500032': {
+    pincode: '500032',
+    area: 'Gachibowli / Financial District',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    cluster: 'Hyderabad',
+    slaLabel: '25 mins (AIG Hospital Belt)',
+    estimatedMinutes: 25,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1030 (Gachibowli)',
+  },
+  '500034': {
+    pincode: '500034',
+    area: 'Banjara Hills Road No 1-12',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    cluster: 'Hyderabad',
+    slaLabel: '30 mins (Hyperlocal)',
+    estimatedMinutes: 30,
+    deliveryFee: 14,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 4,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1031 (Banjara Hills)',
+  },
+  '500081': {
+    pincode: '500081',
+    area: 'HITEC City / Madhapur Cyber Towers',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    cluster: 'Hyderabad',
+    slaLabel: '25 mins (Cyber Corridor Express)',
+    estimatedMinutes: 25,
+    deliveryFee: 12,
+    isHyperlocal: true,
+    coldChainReady: true,
+    nearbyKendraCount: 5,
+    primaryKendraName: 'PM Jan Aushadhi Kendra #1029 (HITEC City)',
+  },
+};
+
+/**
+ * Intelligent pincode resolver that looks up known cluster coordinates
+ * or infers regional serviceability dynamically for any valid 6-digit Indian PIN.
+ */
+export function getPincodeServiceability(pincode: string): PincodeServiceabilityInfo {
+  const cleanPin = pincode.trim();
+  if (PINCODE_DIRECTORY[cleanPin]) {
+    return PINCODE_DIRECTORY[cleanPin];
+  }
+
+  // Infer city and state by first 2 digits (India Post Postal Circle prefixes)
+  const prefix = cleanPin.slice(0, 2);
+  let city = 'Regional Center';
+  let state = 'India';
+  let cluster: PincodeServiceabilityInfo['cluster'] = 'Regional Express';
+
+  if (prefix === '40') {
+    city = 'Mumbai MMR';
+    state = 'Maharashtra';
+    cluster = 'MMR (Mumbai)';
+  } else if (prefix === '41') {
+    city = 'Pune Region';
+    state = 'Maharashtra';
+    cluster = 'Pune';
+  } else if (prefix === '11') {
+    city = 'Delhi NCR';
+    state = 'Delhi';
+    cluster = 'Delhi NCR';
+  } else if (prefix === '56') {
+    city = 'Bengaluru Urban';
+    state = 'Karnataka';
+    cluster = 'Bengaluru';
+  } else if (prefix === '50') {
+    city = 'Hyderabad Metro';
+    state = 'Telangana';
+    cluster = 'Hyderabad';
+  }
+
+  return {
+    pincode: cleanPin,
+    area: `${city} Sector`,
+    city,
+    state,
+    cluster,
+    slaLabel: '60-90 mins (Regional Chemist Network)',
+    estimatedMinutes: 75,
+    deliveryFee: 25,
+    isHyperlocal: false,
+    coldChainReady: true,
+    nearbyKendraCount: 2,
+    primaryKendraName: `PM Jan Aushadhi Kendra (Regional Partner ${cleanPin})`,
+  };
+}
