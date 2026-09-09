@@ -7,7 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.5.0] - 2026-09-09 (Phase 2: PostgreSQL + Prisma DB Migration)
+## [0.6.0] - 2026-09-09 (Phase 3: Chemist POS/ERP Webhook Sync + IoT Cold-Chain Telemetry)
+
+### Added
+- **ERP / POS Bidirectional Sync (`ErpSyncView.tsx`):**
+  - Full connector panel inside the Chemist Partner Portal with 3 sub-tabs: **Connectors**, **Catalogue**, and **Webhook Log**.
+  - Supports 4 Indian pharmacy ERP systems: **Marg ERP 9.9**, **Mediman 4.2**, **POSibolt 3.1**, and **Vyapar 17.4**.
+  - Each connector card displays live state badge (`connected` / `syncing` / `error` / `disconnected`), last sync timestamp, next scheduled sync, total items synced, and pending item count.
+  - Auto-sync toggle (calls `PATCH /api/erp/sync-status/:id/toggle-auto`), expand panel for API key (masked) and config details.
+  - **Simulate Webhook** button fires a `STOCK_UPDATE` event to `POST /api/erp/webhook` and updates state live.
+  - Catalogue tab lists all 4 ERP systems with one-click **Connect** button (optimistic UI update, 1.4s simulated handshake).
+  - Webhook Log tab shows all inbound events with event-type colour-coded badges and item-level batch/expiry/price details.
+- **IoT Cold-Chain Telemetry Monitor (`ColdChainMonitorView.tsx`):**
+  - Deployed in both the **Admin Cockpit** (`Cold-Chain IoT` tab) and the **Chemist Partner Portal** (`Cold-Chain IoT` tab).
+  - KPI summary row: Active sensors, Breach count, Warning count, Unresolved alerts.
+  - **Sensors tab:** Clickable sensor list (status dot + live temp + battery + last ping) with right-side D3.js 48-hour temperature timeline chart.
+    - D3 chart: `scaleTime` × `scaleLinear`, emerald safe-zone rect (2–8°C), dashed threshold lines, catmull-rom spline line, red circle markers on breach readings.
+  - **Alerts tab:** Unresolved alerts with severity badges (Critical / Warning / Info), `Acknowledge` button calling `PATCH /api/cold-chain/alerts/:id/acknowledge`, order-linked breach warnings.
+  - **Compliance Cert tab:** Auto-generated CDSCO Schedule M compliance certificate per sensor — avg/min/max temp, breach count, compliant/non-compliant verdict, and **downloadable `.txt` audit document**.
+- **6 IoT Sensors seeded** across Mumbai, Delhi NCR, Bengaluru, Pune, and Hyderabad covering Insulin & Biologics, Vaccines, Eye Drops, and General Refrigerated categories.
+- **97-point 48-hour temperature history** per sensor (sampled every 30 min) with simulated breach window for the AIIMS Delhi transit sensor.
+- **4 cold-chain alerts** seeded: 2 Critical (AIIMS breach, Kothrud offline), 1 Warning (Parel vaccine fridge), 1 Info/resolved (Worli insulin bay audit).
+- **Phase 3 Backend API Routes (`server.ts`):**
+  - `GET /api/erp/systems` — full ERP system catalogue.
+  - `GET /api/erp/sync-status`, `GET /api/erp/sync-status/:partnerId` — sync status per partner.
+  - `POST /api/erp/webhook` — inbound ERP/POS webhook receiver; updates sync status and logs payload.
+  - `PATCH /api/erp/sync-status/:id/toggle-auto` — toggles auto-sync flag.
+  - `GET /api/cold-chain/sensors` — all sensors with optional `?partnerId=` filter.
+  - `GET /api/cold-chain/readings/:sensorId` — 48h ordered readings for a sensor.
+  - `GET /api/cold-chain/readings-by-order/:orderId` — readings + sensor for a shipment.
+  - `GET /api/cold-chain/alerts` — all alerts with optional `?resolved=true/false` filter.
+  - `POST /api/cold-chain/alert` — inbound IoT alert; updates sensor live temp and status, appends reading, creates breach alert.
+  - `PATCH /api/cold-chain/alerts/:id/acknowledge` — marks alert resolved with acknowledger name.
+
+### Changed
+- **`PartnerPharmacyView.tsx`:** Added purple tab switcher bar with 3 tabs — **Inventory & Orders** (existing content preserved), **ERP / POS Sync** (new `ErpSyncView`), **Cold-Chain IoT** (new `ColdChainMonitorView` filtered by `partnerId`).
+- **`AdminAuditView.tsx`:** Added 4th tab **Cold-Chain IoT** (id `tab-admin-cold-chain`) rendering global `ColdChainMonitorView` alongside existing Pilot Cockpit, Audit Logs, and Logistics Heatmap tabs.
+- **`src/types.ts`:** Added `ErpSystem`, `ErpSystemName`, `ErpSyncState`, `ErpSyncStatus`, `ErpWebhookPayload`, `ColdChainSensor`, `ColdChainSensorStatus`, `ColdChainReading`, `ColdChainAlert`, `ColdChainAlertSeverity`.
+- **`src/data/mockData.ts`:** Added `ERP_SYSTEMS`, `INITIAL_ERP_SYNC_STATUSES`, `RECENT_ERP_WEBHOOKS`, `COLD_CHAIN_SENSORS`, `COLD_CHAIN_READINGS` (via `buildReadings` helper), `INITIAL_COLD_CHAIN_ALERTS`.
+
+---
+
+
 
 ### Added
 - **Full REST API Layer (`server.ts`):**

@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { PharmacyPartner, Offer, Medicine, Order } from '../types';
-import { Store, ShieldCheck, CheckCircle2, AlertTriangle, Package, RefreshCw, Edit3, Truck, Search, User, X, Filter } from 'lucide-react';
+import { Store, ShieldCheck, CheckCircle2, AlertTriangle, Package, RefreshCw, Edit3, Truck, Search, User, X, Filter, Database, Thermometer } from 'lucide-react';
 import { PeakHoursHeatmap } from './PeakHoursHeatmap';
+import { ErpSyncView } from './ErpSyncView';
+import { ColdChainMonitorView } from './ColdChainMonitorView';
 
 interface PartnerPharmacyViewProps {
   partner: PharmacyPartner;
@@ -30,6 +32,7 @@ export const PartnerPharmacyView: React.FC<PartnerPharmacyViewProps> = ({
   const [editPrice, setEditPrice] = useState<number>(0);
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'pending' | 'dispatched'>('all');
+  const [activePartnerTab, setActivePartnerTab] = useState<'inventory' | 'orders' | 'erp-sync' | 'cold-chain'>('inventory');
 
   // Filter offers for this partner
   const partnerOffers = offers.filter((o) => o.partnerId === partner.id);
@@ -173,7 +176,31 @@ export const PartnerPharmacyView: React.FC<PartnerPharmacyViewProps> = ({
       {/* D3-based Weekly Peak Order Volume & Staffing Optimization Heatmap */}
       <PeakHoursHeatmap partner={partner} />
 
-      {/* Inventory Management Table (FR-PART-03 & FR-PART-04) */}
+      {/* Phase 3 Tab Switcher */}
+      <div className="flex items-center gap-1 bg-neutral-100 p-1 rounded-xl text-xs font-semibold w-fit flex-wrap">
+        {([
+          { id: 'inventory',  label: 'Inventory & Orders', icon: <Package className="w-3.5 h-3.5" /> },
+          { id: 'erp-sync',   label: 'ERP / POS Sync',    icon: <Database className="w-3.5 h-3.5" /> },
+          { id: 'cold-chain', label: 'Cold-Chain IoT',     icon: <Thermometer className="w-3.5 h-3.5" /> },
+        ] as const).map(tab => (
+          <button
+            key={tab.id}
+            id={`partner-tab-${tab.id}`}
+            onClick={() => setActivePartnerTab(tab.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              activePartnerTab === tab.id
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'text-neutral-600 hover:text-purple-800'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab: Inventory Management & Orders ───────────────────────────────── */}
+      {activePartnerTab === 'inventory' && (<>
       <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-3">
           <div>
@@ -529,6 +556,17 @@ export const PartnerPharmacyView: React.FC<PartnerPharmacyViewProps> = ({
           </div>
         )}
       </div>
+      </>) /* end inventory tab */}
+
+      {/* ── Tab: ERP / POS Sync (Phase 3) ──────────────────────────────────── */}
+      {activePartnerTab === 'erp-sync' && (
+        <ErpSyncView partnerId={partner.id} partnerName={partner.name} />
+      )}
+
+      {/* ── Tab: Cold-Chain IoT (Phase 3) ───────────────────────────────────── */}
+      {activePartnerTab === 'cold-chain' && (
+        <ColdChainMonitorView partnerId={partner.id} />
+      )}
     </div>
   );
 };

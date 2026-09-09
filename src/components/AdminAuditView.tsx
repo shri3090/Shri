@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AuditEvent, Medicine, Offer, PharmacyPartner } from '../types';
-import { ShieldCheck, Activity, AlertOctagon, Database, Filter, Download, CheckCircle2, Clock, FileSpreadsheet, Award, MapPin } from 'lucide-react';
+import { ShieldCheck, Activity, AlertOctagon, Database, Filter, Download, CheckCircle2, Clock, FileSpreadsheet, Award, MapPin, Thermometer } from 'lucide-react';
 import { RegionalDeliveryHeatmap } from './RegionalDeliveryHeatmap';
 import { PilotMetricsView } from './PilotMetricsView';
+import { ColdChainMonitorView } from './ColdChainMonitorView';
 import { PHARMACY_PARTNERS } from '../data/mockData';
 
 interface AdminAuditViewProps {
@@ -15,7 +16,7 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
   auditLogs,
   partners = PHARMACY_PARTNERS,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'pilot' | 'audit' | 'heatmap'>('pilot');
+  const [activeAdminTab, setActiveAdminTab] = useState<'pilot' | 'audit' | 'heatmap' | 'cold-chain'>('pilot');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterAction, setFilterAction] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -128,6 +129,19 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
             >
               <MapPin className="w-3.5 h-3.5" />
               <span>Logistics Heatmap</span>
+            </button>
+
+            <button
+              id="tab-admin-cold-chain"
+              onClick={() => setActiveAdminTab('cold-chain')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeAdminTab === 'cold-chain'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-neutral-700 hover:text-rose-900'
+              }`}
+            >
+              <Thermometer className="w-3.5 h-3.5" />
+              <span>Cold-Chain IoT</span>
             </button>
           </div>
 
@@ -370,6 +384,11 @@ export const AdminAuditView: React.FC<AdminAuditViewProps> = ({
       {/* Sub-tab 3: Regional Order Delivery Concentration Heat Map */}
       {activeAdminTab === 'heatmap' && (
         <RegionalDeliveryHeatmap />
+      )}
+
+      {/* Sub-tab 4: IoT Cold-Chain Telemetry Monitor (Phase 3) */}
+      {activeAdminTab === 'cold-chain' && (
+        <ColdChainMonitorView />
       )}
     </div>
   );

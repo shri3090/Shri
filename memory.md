@@ -71,6 +71,11 @@ GenericMed connects verified patients directly with licensed retail chemists (Fo
 ### F. Authentication & Identity
 - [x] **Multi-Persona Role-Based Gateway (`auth` role & modal):** Dedicated login and registration screens for Customers, Registered Pharmacists, Chemist Partners, and Audit Officers with `localStorage` session persistence.
 
+### I. Phase 3 Chemist POS/ERP Sync & IoT Cold-Chain Telemetry
+- [x] **ERP / POS Bidirectional Sync (`ErpSyncView.tsx`):** Connector panel supporting Marg ERP 9.9, Mediman 4.2, POSibolt 3.1, Vyapar 17.4. Live sync state badges, auto-sync toggle, simulate webhook, per-partner webhook log. Wired as `ERP / POS Sync` tab inside Chemist Partner Portal.
+- [x] **IoT Cold-Chain Telemetry Monitor (`ColdChainMonitorView.tsx`):** 6 BLE/Cellular/WiFi sensors across 5 metro clusters. D3.js 48-hour temperature timeline (safe-zone band, breach markers, catmull-rom spline). Alert acknowledgement flow. CDSCO Schedule M downloadable compliance certificate. Wired as `Cold-Chain IoT` tab in both Partner Portal and Admin Cockpit.
+- [x] **Phase 3 Backend API Surface:** 11 new routes for ERP webhook ingestion, sync status, sensor readings, alert management, and breach notification (`POST /api/cold-chain/alert` auto-creates alerts and updates live sensor state).
+
 ### H. Phase 2 PostgreSQL + Prisma DB Migration
 - [x] **Dual-Persistence Repository Layer (`server/db.ts`):** All data access functions (medicines, offers, partners, prescriptions, orders, audit events) attempt PostgreSQL via Prisma first, then transparently fall back to in-memory seed state. Zero UI regressions in offline mode.
 - [x] **Full REST API Surface (`server.ts`):** 15 endpoints covering all domain entities — medicines, offers, stock updates, partners, prescriptions, pharmacist reviews, orders, audit events, DB health check, and seeding.
@@ -89,11 +94,11 @@ GenericMed connects verified patients directly with licensed retail chemists (Fo
 
 ## 4. Pending Features & Product Backlog
 
+- [x] **Chemist POS / ERP Webhook Sync:** Bidirectional inventory synchronization with Marg ERP, Mediman, POSibolt, and Vyapar via webhook API.
+- [x] **IoT Cold-Chain Telemetry:** Integration with BLE/cellular temperature sensor loggers ensuring biological items (Insulin, Vaccines) remain between 2°C and 8°C throughout transit. CDSCO Schedule M compliance certificates generated per shipment.
 - [ ] **Real OCR via Vision AI:** Replace simulated OCR parsing with Google Cloud Document AI / Gemini Vision API for messy handwritten Indian prescriptions.
-- [ ] **Chemist POS / ERP Webhook Sync:** Bidirectional inventory synchronization with popular Indian pharmacy software (Marg ERP, Mediman, POSibolt).
 - [ ] **Automated WhatsApp / SMS OTP Gateway:** Notification updates via WhatsApp Business API for prescription approval and delivery milestones.
 - [ ] **Direct Payment Gateway Integration:** Razorpay / Cashfree native UPI intent and auto-debit subscriptions for monthly chronic refills.
-- [ ] **IoT Cold-Chain Telemetry:** Integration with BLE/cellular temperature sensor loggers ensuring biological items (Insulin, Vaccines) remain between 2°C and 8°C throughout transit.
 - [ ] **Multilingual Vernacular Support:** Regional Indian language translation (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali).
 
 ---
@@ -338,8 +343,8 @@ gantt
     PostgreSQL + Prisma DB Migration :done, 2026-10, 2026-11
     Live Document AI Vision OCR Integration :active, 2026-11, 2026-12
     section Phase 3: Chemist Integrations
-    Chemist POS & ERP Sync (Marg, Mediman) :2026-12, 2027-01
-    IoT Cold-Chain Telemetry Module :2027-01, 2027-02
+    Chemist POS & ERP Sync (Marg, Mediman) :done, 2026-12, 2027-01
+    IoT Cold-Chain Telemetry Module :done, 2027-01, 2027-02
     section Phase 4: Expansion
     Vernacular Voice & Multilingual Localization :2027-02, 2027-04
     National Pincode Expansion (Tier 1-4) :2027-04, 2027-07
