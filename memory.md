@@ -99,7 +99,7 @@ GenericMed connects verified patients directly with licensed retail chemists (Fo
 - [ ] **Real OCR via Vision AI:** Replace simulated OCR parsing with Google Cloud Document AI / Gemini Vision API for messy handwritten Indian prescriptions.
 - [ ] **Automated WhatsApp / SMS OTP Gateway:** Notification updates via WhatsApp Business API for prescription approval and delivery milestones.
 - [ ] **Direct Payment Gateway Integration:** Razorpay / Cashfree native UPI intent and auto-debit subscriptions for monthly chronic refills.
-- [ ] **Multilingual Vernacular Support:** Regional Indian language translation (Hindi, Marathi, Tamil, Telugu, Kannada, Bengali).
+- [x] **Multilingual Vernacular Support:** 7-language i18n engine (English, Hindi, Marathi, Tamil, Telugu, Kannada, Bengali) with `VernacularSwitcher` in Header, `LocaleProvider` context, and translations applied across hero, search, categories, and medicine card (Phase 4).
 
 ---
 

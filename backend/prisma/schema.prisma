@@ -1,0 +1,386 @@
+// GenericMed Relational Database Schema
+// Phase 2: PostgreSQL & Prisma ORM Migration
+// Compliant with CDSCO Rule 65 (Drugs and Cosmetics Rules, 1945)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  PHARMACIST
+  PARTNER
+  ADMIN
+  AUTH
+}
+
+enum DosageForm {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  INHALER
+  OINTMENT
+}
+
+enum ScheduleCategory {
+  SCHEDULE_H
+  SCHEDULE_H1
+  OTC
+  SCHEDULE_X
+}
+
+enum StockState {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  STALE
+}
+
+enum PrescriptionStatus {
+  PENDING_REVIEW
+  VERIFIED
+  CLARIFICATION_REQUESTED
+  REJECTED
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NETBANKING
+  COD
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  REFUNDED
+  FAILED
+}
+
+enum FulfillmentStatus {
+  ORDER_PLACED
+  RX_VERIFICATION
+  PHARMACY_PROCESSING
+  DISPATCHED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  phone          String
+  email          String    @unique
+  defaultPincode String    @default("400001")
+  role           UserRole  @default(CUSTOMER)
+  licenseNumber  String?   // Form 20B/21B statutory drug license
+  councilRegNo   String?   // State Pharmacy Council Registration Number
+  pharmacyName   String?
+  gstin          String?   // 15-character statutory GSTIN
+  qualification  String?   // e.g. "B.Pharm (Registered Duty Pharmacist)"
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  addresses       Address[]
+  orders          Order[]
+  prescriptions   Prescription[]
+  refillReminders RefillReminder[]
+  supportTickets  SupportTicket[]
+
+  @@map("users")
+}
+
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String   // "Home", "Office", "Clinic"
+  street    String
+  city      String
+  state     String
+  pincode   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  orders    Order[]
+
+  @@index([userId])
+  @@index([pincode])
+  @@map("addresses")
+}
+
+model Composition {
+  id               String     @id @default(cuid())
+  name             String     // e.g. "Paracetamol", "Metformin Hydrochloride"
+  strength         String     // e.g. "650 mg", "500 mg"
+  therapeuticClass String     // e.g. "Analgesic & Antipyretic", "Oral Hypoglycemic"
+  createdAt        DateTime   @default(now())
+
+  medicines        Medicine[]
+
+  @@unique([name, strength])
+  @@map("compositions")
+}
+
+model Medicine {
+  id                     String           @id @default(cuid())
+  name                   String           // Formulation name
+  brandName              String?
+  compositionText        String           // Full salt text e.g. "Paracetamol 650mg IP"
+  compositionId          String
+  composition            Composition      @relation(fields: [compositionId], references: [id])
+  strength               String
+  dosageForm             DosageForm       @default(TABLET)
+  packSize               String           // e.g. "Strip of 15 tablets"
+  unitCount              Int              @default(10)
+  manufacturer           String
+  isGeneric              Boolean          @default(true)
+  scheduleCategory       ScheduleCategory @default(OTC)
+  requiresPrescription   Boolean          @default(false)
+  indication             String           // e.g. "Fever & Pain Relief"
+  brandedAlternativeName String?          // e.g. "Dolo 650"
+  brandedMrp             Float            // Market price of branded equivalent
+  genericMrp             Float            // Base Maximum Retail Price of generic
+  imageUrl               String?
+  description            String
+  dosageInstructions     String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  offers                 Offer[]
+  orderItems             OrderItem[]
+  refillReminders        RefillReminder[]
+
+  @@index([compositionId])
+  @@index([scheduleCategory])
+  @@map("medicines")
+}
+
+model PharmacyPartner {
+  id                  String   @id @default(cuid())
+  name                String   // Chemist business name
+  licenseNumber       String   // Form 20B/21B statutory drug license string
+  gstin               String   // 15-character GSTIN
+  rating              Float    @default(4.5)
+  reviewCount         Int      @default(0)
+  city                String
+  pincode             String
+  isJanAushadhiKendra Boolean  @default(false)
+  verifiedBadge       Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  offers              Offer[]
+  orders              Order[]
+
+  @@index([city])
+  @@index([pincode])
+  @@map("pharmacy_partners")
+}
+
+model Offer {
+  id                     String          @id @default(cuid())
+  medicineId             String
+  medicine               Medicine        @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  partnerId              String
+  partner                PharmacyPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  basePrice              Float           // in ₹
+  mrp                    Float           // in ₹
+  deliveryFee            Float           @default(0)
+  packagingFee           Float           @default(5)
+  gstPercent             Float           @default(12)
+  totalPayableCost       Float           // basePrice + deliveryFee + packagingFee + gst
+  savingsVsBranded       Float
+  savingsPercent         Float
+  stockState             StockState      @default(IN_STOCK)
+  stockCount             Int             @default(100)
+  freshnessTimestamp     DateTime        @default(now())
+  estimatedDeliveryHours Int             @default(2)
+  batchNumber            String          // Batch tracking e.g. "BT-2026-99"
+  expiryDate             String          // e.g. "08/2028"
+  isLowestPrice          Boolean         @default(false)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  orderItems             OrderItem[]
+
+  @@index([medicineId])
+  @@index([partnerId])
+  @@index([stockState])
+  @@map("offers")
+}
+
+model Prescription {
+  id                  String             @id @default(cuid())
+  userId              String
+  user                User               @relation(fields: [userId], references: [id])
+  fileName            String
+  fileSize            String
+  uploadedAt          DateTime           @default(now())
+  status              PrescriptionStatus @default(PENDING_REVIEW)
+  doctorName          String?
+  doctorRegNo         String?            // State Medical Council Registration
+  clinicName          String?
+  reviewerNotes       String?
+  reviewedBy          String?            // Duty Pharmacist identifier
+  reviewedAt          DateTime?
+  imageUrl            String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  extractedMedicines  ExtractedMedicine[]
+  orders              Order[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("prescriptions")
+}
+
+model ExtractedMedicine {
+  id             String       @id @default(cuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  name           String
+  dosage         String
+  duration       String
+  verified       Boolean      @default(false)
+
+  @@index([prescriptionId])
+  @@map("extracted_medicines")
+}
+
+model Order {
+  id                 String            @id @default(cuid())
+  orderNumber        String            @unique
+  userId             String
+  user               User              @relation(fields: [userId], references: [id])
+  customerName       String?
+  createdAt          DateTime          @default(now())
+  totalItemAmount    Float
+  totalDeliveryFee   Float
+  totalPackagingFee  Float
+  totalGst           Float
+  totalPayable       Float
+  totalSavings       Float
+  deliveryAddressId  String?
+  deliveryAddress    Address?          @relation(fields: [deliveryAddressId], references: [id])
+  paymentMethod      PaymentMethod     @default(UPI)
+  paymentStatus      PaymentStatus     @default(PAID)
+  fulfillmentStatus  FulfillmentStatus @default(ORDER_PLACED)
+  partnerId          String
+  partner            PharmacyPartner   @relation(fields: [partnerId], references: [id])
+  prescriptionId     String?
+  prescription       Prescription?     @relation(fields: [prescriptionId], references: [id])
+  prescriptionStatus String?
+  trackingNumber     String?
+  invoiceNumber      String            @unique
+  updatedAt          DateTime          @updatedAt
+
+  items              OrderItem[]
+  timeline           OrderTimeline[]
+
+  @@index([userId])
+  @@index([partnerId])
+  @@index([fulfillmentStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  medicineId String
+  medicine   Medicine @relation(fields: [medicineId], references: [id])
+  offerId    String
+  offer      Offer    @relation(fields: [offerId], references: [id])
+  quantity   Int      @default(1)
+  unitPrice  Float
+  totalPrice Float
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderTimeline {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      String
+  timestamp   DateTime @default(now())
+  description String
+
+  @@index([orderId])
+  @@map("order_timelines")
+}
+
+model RefillReminder {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  medicineId      String
+  medicine        Medicine @relation(fields: [medicineId], references: [id])
+  medicineName    String
+  dosage          String
+  frequencyDays   Int      @default(30)
+  lastOrderedDate DateTime @default(now())
+  nextRefillDate  DateTime
+  isActive        Boolean  @default(true)
+  packSize        String
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@map("refill_reminders")
+}
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  actor     String
+  role      String
+  action    String
+  entity    String
+  entityId  String
+  details   String
+
+  @@index([actor])
+  @@index([action])
+  @@index([entity])
+  @@index([timestamp])
+  @@map("audit_events")
+}
+
+model SupportTicket {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  orderId   String?
+  category  String
+  subject   String
+  status    String           @default("Open")
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  messages  SupportMessage[]
+
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender    String
+  text      String
+  timestamp DateTime      @default(now())
+
+  @@index([ticketId])
+  @@map("support_messages")
+}

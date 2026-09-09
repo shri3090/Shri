@@ -7,7 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.6.0] - 2026-09-09 (Phase 3: Chemist POS/ERP Webhook Sync + IoT Cold-Chain Telemetry)
+## [0.7.0] - 2026-09-09 (Phase 4: Vernacular Multilingual i18n + National Tier 2/3/4 Pincode Expansion)
+
+### Added
+- **Vernacular Localisation Engine (`src/i18n/index.ts`):**
+  - Supports 7 Indian languages: English, Hindi (हिन्दी), Marathi (मराठी), Tamil (தமிழ்), Telugu (తెలుగు), Kannada (ಕನ್ನಡ), Bengali (বাংলা).
+  - 80-key `Translations` interface covering app/header labels, customer tabs, hero section, search bar, category pills, medicine card, cart/checkout, prescription statuses, and common actions.
+  - All 7 language objects fully populated with authentic native-script strings verified for correct Devanagari, Tamil, Telugu, Kannada, and Bengali Unicode.
+  - `LocaleContext` + `LocaleProvider` with `localStorage` persistence under `genericmed_locale`.
+  - `useLocale()` hook returning `{ locale, setLocale, t }` for any component.
+  - `LOCALE_META` record with native script name, English name, flag emoji, and script block per locale.
+- **Language Switcher (`VernacularSwitcher.tsx`):**
+  - Compact pill button in the Header showing current language in native script.
+  - Dropdown (closes on outside click) lists all 7 locales with flag + native name + English name + active checkmark.
+  - Accessible: `aria-haspopup="listbox"`, `aria-expanded`, `role="option"`, `aria-selected`.
+  - `id="vernacular-switcher"` and `id="lang-option-{code}"` for each option.
+- **National Tier 2/3/4 Pincode Expansion (`regionalDeliveryData.ts`):**
+  - 8 new `RegionalDeliveryZone` records: Chennai, Kolkata, Ahmedabad, Jaipur, Nagpur, Lucknow, Kochi, Chandigarh.
+  - 25 new `PincodeServiceabilityInfo` entries merged into `PINCODE_DIRECTORY` via `Object.assign`.
+  - `TIER2_PREFIX_MAP` for 2-digit prefix inference covering Tamil Nadu (60), West Bengal (70), Gujarat (38), Rajasthan (30), Nagpur (44), Uttar Pradesh (22), Kerala (68), Chandigarh (16).
+  - `getTier2PincodeServiceability()` enhanced resolver exported for optional upstream use.
+  - `TIER2_CITIES` const array (8 entries with name, state, samplePin, flag) exported for UI quick-select.
+- **`PincodeServiceabilityModal.tsx` — Phase 4 City Quick-Select:**
+  - Phase 1 cluster heading relabelled to "Phase 1 Pilot Clusters (Metro)".
+  - New "Phase 4 National Expansion (Tier 2 / 3 Cities)" section below: 2×4 grid of city buttons with flag emoji, city name, state, and representative pincode. Blue active state distinct from the emerald metro style.
+  - All 8 Tier 2 city buttons have `id="pincode-tier2-{pin}"` for test automation.
+
+### Changed
+- **`main.tsx`:** Wrapped `<App />` in `<LocaleProvider>` so the locale context is available to all components from root.
+- **`Header.tsx`:** Imported `useLocale` + `VernacularSwitcher`. Inserted `<VernacularSwitcher />` between PRD Specs and Helpline buttons. Translated `deliverTo`, `prdSpecs`, `helpline` strings via `t`.
+- **`App.tsx`:** Imported `useLocale`, added `const { t } = useLocale()`. Translated: hero badge, headline, subtext, both CTA buttons; search placeholder, bio-equivalence banner (label + suffix + average saving), results count line, sort label, reset button; all 8 category pill labels.
+- **`MedicineCard.tsx`:** Imported `useLocale`. Translated: Generic IP badge, Rx required label, "Verified Total Payable", savings percent badge + `vs Branded MRP`, delivery estimate line, Compare Prices button, Add to Cart button.
+
+---
+
+
 
 ### Added
 - **ERP / POS Bidirectional Sync (`ErpSyncView.tsx`):**
